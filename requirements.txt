@@ -1,0 +1,7 @@
+fastmcp
+pydantic
+pyyaml
+ollama
+requests
+httpx
+rich
