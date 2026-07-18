@@ -1,11 +1,8 @@
 """
 AIStudio Research Agent
 
-Builds a comprehensive documentary research package from the
-Production Brief.
-
-Produces a ResearchData object that becomes the factual foundation
-for the Outline Agent.
+Builds the complete ResearchData object using multiple focused LLM
+requests rather than one very large request.
 
 Author : AIStudio
 """
@@ -27,15 +24,10 @@ from shared.services import (
 
 class ResearchAgent:
     """
-    Produces documentary research.
+    Produces the complete ResearchData object.
 
-    Input
-    -----
-    ProductionBrief
-
-    Output
-    ------
-    ResearchData
+    Multiple small prompts are considerably more reliable than
+    one enormous prompt.
     """
 
     def __init__(self) -> None:
@@ -46,23 +38,21 @@ class ResearchAgent:
             __file__
         )
 
-    def run(
+    def _generate_section(
         self,
-        state: ProjectState,
-    ) -> ProjectState:
+        task: str,
+        production_brief: dict,
+    ) -> dict:
         """
-        Generate documentary research.
+        Generate one section of the research.
         """
-
-        if state.production_brief is None:
-
-            raise ValueError(
-                "ProjectState does not contain a ProductionBrief."
-            )
 
         prompt = json.dumps(
 
-            state.production_brief.model_dump(),
+            {
+                "task": task,
+                "production_brief": production_brief,
+            },
 
             indent=4,
 
@@ -70,7 +60,7 @@ class ResearchAgent:
 
         )
 
-        result = self.llm.generate_json(
+        return self.llm.generate_json(
 
             system=self.system_prompt,
 
@@ -80,6 +70,174 @@ class ResearchAgent:
 
         )
 
-        state.research = ResearchData(**result)
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+        """
+        Build the research package.
+        """
+
+        if state.production_brief is None:
+
+            raise ValueError(
+                "ProjectState does not contain a ProductionBrief."
+            )
+
+        production_brief = state.production_brief.model_dump()
+
+        research = ResearchData()
+
+        # ======================================================
+        # Background
+        # ======================================================
+
+        result = self._generate_section(
+
+            "background",
+
+            production_brief,
+
+        )
+
+        research.executive_summary = result.get(
+            "executive_summary",
+            "",
+        )
+
+        research.historical_background = result.get(
+            "historical_background",
+            "",
+        )
+
+        research.scientific_background = result.get(
+            "scientific_background",
+            "",
+        )
+
+        # ======================================================
+        # Facts
+        # ======================================================
+
+        result = self._generate_section(
+
+            "facts",
+
+            production_brief,
+
+        )
+
+        research.facts = result.get(
+            "facts",
+            [],
+        )
+
+        research.statistics = result.get(
+            "statistics",
+            [],
+        )
+
+        research.timeline = result.get(
+            "timeline",
+            [],
+        )
+
+        research.technical_terms = result.get(
+            "technical_terms",
+            [],
+        )
+
+        # ======================================================
+        # Misconceptions
+        # ======================================================
+
+        result = self._generate_section(
+
+            "misconceptions",
+
+            production_brief,
+
+        )
+
+        research.misconceptions = result.get(
+            "misconceptions",
+            [],
+        )
+
+        # ======================================================
+        # Production Assets
+        # ======================================================
+
+        result = self._generate_section(
+
+            "production",
+
+            production_brief,
+
+        )
+
+        research.visual_opportunities = result.get(
+            "visual_opportunities",
+            [],
+        )
+
+        research.broll_opportunities = result.get(
+            "broll_opportunities",
+            [],
+        )
+
+        research.cinematic_moments = result.get(
+            "cinematic_moments",
+            [],
+        )
+
+        research.emotional_beats = result.get(
+            "emotional_beats",
+            [],
+        )
+
+        research.narration_highlights = result.get(
+            "narration_highlights",
+            [],
+        )
+
+        # ======================================================
+        # References
+        # ======================================================
+
+        result = self._generate_section(
+
+            "references",
+
+            production_brief,
+
+        )
+
+        research.important_people = result.get(
+            "important_people",
+            [],
+        )
+
+        research.important_locations = result.get(
+            "important_locations",
+            [],
+        )
+
+        research.search_keywords = result.get(
+            "search_keywords",
+            [],
+        )
+
+        research.related_topics = result.get(
+            "related_topics",
+            [],
+        )
+
+        research.verification_notes = result.get(
+            "verification_notes",
+            [],
+        )
+
+        state.research = research
 
         return state
