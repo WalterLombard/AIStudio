@@ -1,25 +1,27 @@
-from agents.executive_producer import ExecutiveProducer
-from agents.researcher import ResearchAgent
+from pprint import pprint
+
+from agents.executive_producer.agent import ExecutiveProducerAgent
+from agents.researcher.agent import ResearchAgent
+
+from shared.models import ProjectState
 
 
-producer = ExecutiveProducer()
+state = ProjectState()
+
+state.project.topic = "Sharks"
+
+producer = ExecutiveProducerAgent()
+state = producer.run(state)
 
 researcher = ResearchAgent()
-
-
-state = producer.run(
-    "Create a ten minute documentary about sharks."
-)
-
 state = researcher.run(state)
 
-
+print()
 print("=" * 80)
-print("PROJECT STATE")
+print("RESEARCH DATA")
 print("=" * 80)
 
-print(
-    state.model_dump_json(
-        indent=4,
-    )
+pprint(
+    state.research.model_dump(),
+    sort_dicts=False,
 )
