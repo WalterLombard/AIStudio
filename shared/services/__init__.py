@@ -1,15 +1,17 @@
+"""
+AIStudio Shared Services
+
+This package exposes the shared services used throughout AIStudio.
+
+Only completed and stable services are exported here.
+
+Author : AIStudio
+"""
+
 from .llm_service import LLMService
 from .prompt_service import PromptService
-from .memory_service import MemoryService
-from .project_service import ProjectService
-from .asset_service import AssetService
-from .event_bus import EventBus
 
 __all__ = [
     "LLMService",
     "PromptService",
-    "MemoryService",
-    "ProjectService",
-    "AssetService",
-    "EventBus",
 ]

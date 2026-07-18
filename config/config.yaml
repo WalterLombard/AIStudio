@@ -15,6 +15,9 @@ models:
   llm:
     provider: ollama
     model: gemma4-video-agent
+    endpoint: http://127.0.0.1:11434/api/generate
+    temperature: 0.3
+    num_predict: 8192
 
   image:
     provider: diffusers

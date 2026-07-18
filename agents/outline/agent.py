@@ -1,34 +1,98 @@
-import json
-from pathlib import Path
+"""
+AIStudio Outline Agent
 
-from shared.mcp_client import MCPClient
+Builds the documentary structure from the Production Brief and
+Research results.
+
+Produces an OutlineData object that becomes the blueprint for the
+Script Writer.
+
+Author : AIStudio
+"""
+
+from __future__ import annotations
+
+import json
+
+from shared.models import (
+    OutlineData,
+    ProjectState,
+)
+
+from shared.services import (
+    LLMService,
+    PromptService,
+)
 
 
 class OutlineAgent:
+    """
+    Produces the documentary outline.
 
-    def __init__(self):
+    Input
+    -----
+    ProductionBrief
+    ResearchData
 
-        self.llm = MCPClient()
+    Output
+    ------
+    OutlineData
+    """
 
-        prompt_file = Path(__file__).parent / "prompt.md"
+    def __init__(self) -> None:
 
-        self.system_prompt = prompt_file.read_text(
-            encoding="utf-8"
+        self.llm = LLMService()
+
+        self.system_prompt = PromptService.load_prompt(
+            __file__
         )
 
-    def run(self, production_brief: dict, research: dict):
-        payload = {
-            "title": production_brief["title"],
-            "duration_minutes": production_brief["duration_minutes"],
-            "audience": production_brief["audience"],
-            "tone": production_brief["tone"],
-            "summary": research["summary"],
-            "facts": research["facts"],
-            "timeline": research["timeline"]
-        }
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+        """
+        Builds the documentary outline.
+        """
 
-        return self.llm.generate_json(
+        if state.production_brief is None:
+
+            raise ValueError(
+                "ProjectState does not contain a ProductionBrief."
+            )
+
+        if state.research is None:
+
+            raise ValueError(
+                "ProjectState does not contain ResearchData."
+            )
+
+        prompt = json.dumps(
+
+            {
+                "production_brief":
+                    state.production_brief.model_dump(),
+
+                "research":
+                    state.research.model_dump(),
+            },
+
+            indent=4,
+
+            ensure_ascii=False,
+
+        )
+
+        result = self.llm.generate_json(
+
             system=self.system_prompt,
-            prompt=json.dumps(payload, indent=4),
-            temperature=0.1
+
+            prompt=prompt,
+
+            temperature=0.2,
+
         )
+
+        state.outline = OutlineData(**result)
+
+        return state
