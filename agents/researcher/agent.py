@@ -1,8 +1,11 @@
 """
 AIStudio Research Agent
 
-Responsible for collecting factual research that will be used by all
-downstream agents.
+Builds a comprehensive documentary research package from the
+Production Brief.
+
+Produces a ResearchData object that becomes the factual foundation
+for the Outline Agent.
 
 Author : AIStudio
 """
@@ -24,7 +27,15 @@ from shared.services import (
 
 class ResearchAgent:
     """
-    Produces the factual research package for a project.
+    Produces documentary research.
+
+    Input
+    -----
+    ProductionBrief
+
+    Output
+    ------
+    ResearchData
     """
 
     def __init__(self) -> None:
@@ -32,7 +43,7 @@ class ResearchAgent:
         self.llm = LLMService()
 
         self.system_prompt = PromptService.load_prompt(
-            __file__,
+            __file__
         )
 
     def run(
@@ -40,13 +51,13 @@ class ResearchAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Generate research from the production brief.
+        Generate documentary research.
         """
 
         if state.production_brief is None:
 
             raise ValueError(
-                "ProductionBrief has not been generated."
+                "ProjectState does not contain a ProductionBrief."
             )
 
         prompt = json.dumps(
