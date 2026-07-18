@@ -1,37 +1,90 @@
+"""
+AIStudio Script Writer Agent
+
+Generates the complete documentary narration from the approved outline.
+
+Author : AIStudio
+"""
+
+from __future__ import annotations
+
 import json
-from pathlib import Path
 
-from shared.mcp_client import MCPClient
+from shared.models import (
+    ProjectState,
+    ScriptData,
+)
+
+from shared.services import (
+    LLMService,
+    PromptService,
+)
 
 
-class ScriptWriter:
+class ScriptWriterAgent:
+    """
+    Produces the complete documentary script.
+    """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
-        self.llm = MCPClient()
+        self.llm = LLMService()
 
-        prompt_file = Path(__file__).parent / "prompt.md"
-
-        self.system_prompt = prompt_file.read_text(
-            encoding="utf-8"
+        self.system_prompt = PromptService.load_prompt(
+            __file__
         )
 
     def run(
         self,
-        production_brief: dict,
-        research: dict
-    ):
+        state: ProjectState,
+    ) -> ProjectState:
 
-        payload = {
+        if state.production_brief is None:
+            raise ValueError(
+                "ProjectState does not contain ProductionBrief."
+            )
 
-    "title": production_brief["title"],
+        if state.research is None:
+            raise ValueError(
+                "ProjectState does not contain ResearchData."
+            )
 
-    "scene_count": production_brief["scene_count"],
+        if state.outline is None:
+            raise ValueError(
+                "ProjectState does not contain OutlineData."
+            )
 
-    "tone": production_brief["tone"],
+        prompt = json.dumps(
 
-    "research_summary": research["summary"],
+            {
+                "production_brief":
+                    state.production_brief.model_dump(),
 
-    "facts": research["facts"]
+                "research":
+                    state.research.model_dump(),
 
-}
+                "outline":
+                    state.outline.model_dump(),
+            },
+
+            indent=4,
+
+            ensure_ascii=False,
+
+        )
+
+        result = self.llm.generate_json(
+
+            system=self.system_prompt,
+
+            prompt=prompt,
+
+            temperature=0.25,
+
+        )
+
+        state.script = ScriptData(
+            **result
+        )
+
+        return state
