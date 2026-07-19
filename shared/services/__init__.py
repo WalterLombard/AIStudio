@@ -1,17 +1,29 @@
 """
 AIStudio Shared Services
 
-This package exposes the shared services used throughout AIStudio.
-
-Only completed and stable services are exported here.
+Exports all services used throughout AIStudio.
 
 Author : AIStudio
 """
 
+from .asset_service import AssetService
+from .audio_mixer_service import AudioMixerService
+from .image_service import ImageService
 from .llm_service import LLMService
+from .music_service import MusicService
 from .prompt_service import PromptService
+from .sfx_service import SFXService
+from .tts_service import TTSService
+from .video_compiler_service import VideoCompilerService
 
 __all__ = [
+    "AssetService",
+    "AudioMixerService",
+    "ImageService",
     "LLMService",
+    "MusicService",
     "PromptService",
+    "SFXService",
+    "TTSService",
+    "VideoCompilerService",
 ]

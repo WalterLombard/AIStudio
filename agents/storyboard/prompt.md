@@ -142,3 +142,13 @@ No markdown.
 No explanations.
 
 No comments.
+
+Continuity Rules
+
+• Maintain character consistency across all scenes.
+• Maintain environment consistency.
+• Maintain wardrobe consistency.
+• Maintain time-of-day consistency unless explicitly changed.
+• Camera movement should support the emotional pacing of the narration.
+• Every image_prompt must be fully self-contained and must not rely on previous prompts.
+• Every video_prompt describes movement only and assumes the image_prompt has already established the scene.

@@ -66,7 +66,6 @@ dist/
 
 output/
 renders/
-projects/
 
 # ==========================================
 # Generated Media
@@ -77,10 +76,10 @@ images/
 audio/
 
 # ==========================================
-# AI Models
+# Local AI Models
 # ==========================================
 
-models/
+local_models/
 
 *.onnx
 *.gguf
