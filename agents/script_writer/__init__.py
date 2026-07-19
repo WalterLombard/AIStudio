@@ -1,3 +1,5 @@
-from .agent import ScriptWriter
+from .agent import ScriptWriterAgent
 
-__all__ = ["ScriptWriter"]
+__all__ = [
+    "ScriptWriterAgent",
+]
