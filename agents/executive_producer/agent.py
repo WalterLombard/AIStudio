@@ -1,11 +1,11 @@
 """
 AIStudio Executive Producer Agent
 
-Responsible for creating the initial Production Brief for a project.
+Creates the initial Production Brief from the user's request.
 
-This is the first AI agent in the AIStudio pipeline.
+This is the first AI agent in the AIStudio production pipeline.
 
-Author : AIStudio
+Author: AIStudio
 """
 
 from __future__ import annotations
@@ -23,7 +23,17 @@ from shared.services import (
 
 class ExecutiveProducer:
     """
-    Produces the Production Brief from the user's request.
+    Generates the initial Production Brief.
+
+    Responsibilities
+    ----------------
+    - Read the user's request
+    - Generate the Production Brief
+    - Initialise the ProjectState
+    - Populate the project metadata
+
+    This agent does NOT perform research, outlining,
+    scripting or storyboarding.
     """
 
     def __init__(self) -> None:
@@ -39,24 +49,8 @@ class ExecutiveProducer:
         user_request: str,
         state: ProjectState | None = None,
     ) -> ProjectState:
-        """
-        Generate the Production Brief.
-
-        Parameters
-        ----------
-        user_request
-            The user's requested video.
-
-        state
-            Existing project state (optional).
-
-        Returns
-        -------
-        ProjectState
-        """
 
         if state is None:
-
             state = ProjectState()
 
         result = self.llm.generate_json(
@@ -69,18 +63,24 @@ class ExecutiveProducer:
 
         )
 
-        state.production_brief = ProductionBrief(**result)
+        brief = ProductionBrief(**result)
 
-        state.project.title = (
-            state.production_brief.title
+        state.production_brief = brief
+
+        #
+        # Initialise project metadata
+        #
+
+        state.project_info.title = brief.title
+
+        state.project_info.topic = brief.topic
+
+        state.project_info.duration_minutes = (
+            brief.duration_minutes
         )
 
-        state.project.topic = (
-            state.production_brief.topic
-        )
+        state.current_stage = "production_brief"
 
-        state.project.duration_minutes = (
-            state.production_brief.duration_minutes
-        )
+        state.status = "completed"
 
         return state

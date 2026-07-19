@@ -2,7 +2,14 @@
 AIStudio Research Agent
 
 Builds the complete ResearchData object using multiple focused LLM
-requests rather than one very large request.
+requests rather than one enormous prompt.
+
+Each research section is generated independently. This improves:
+
+- reliability
+- JSON accuracy
+- retry capability
+- future parallelisation
 
 Author : AIStudio
 """
@@ -10,6 +17,7 @@ Author : AIStudio
 from __future__ import annotations
 
 import json
+import logging
 
 from shared.models import (
     ProjectState,
@@ -21,13 +29,19 @@ from shared.services import (
     PromptService,
 )
 
+LOGGER = logging.getLogger("ResearchAgent")
+
 
 class ResearchAgent:
     """
-    Produces the complete ResearchData object.
+    Generates the complete research package.
 
-    Multiple small prompts are considerably more reliable than
-    one enormous prompt.
+    The research package is intentionally generated in multiple
+    independent LLM calls.
+
+    Smaller prompts produce significantly higher quality output,
+    reduce hallucinations and allow future retry of individual
+    sections.
     """
 
     def __init__(self) -> None:
@@ -35,7 +49,7 @@ class ResearchAgent:
         self.llm = LLMService()
 
         self.system_prompt = PromptService.load_prompt(
-            __file__
+            __file__,
         )
 
     def _generate_section(
@@ -44,8 +58,13 @@ class ResearchAgent:
         production_brief: dict,
     ) -> dict:
         """
-        Generate one section of the research.
+        Generate one section of the research package.
         """
+
+        LOGGER.info(
+            "Generating research section: %s",
+            task,
+        )
 
         prompt = json.dumps(
 
@@ -60,7 +79,7 @@ class ResearchAgent:
 
         )
 
-        return self.llm.generate_json(
+        result = self.llm.generate_json(
 
             system=self.system_prompt,
 
@@ -70,33 +89,57 @@ class ResearchAgent:
 
         )
 
+        LOGGER.info(
+            "Completed research section: %s",
+            task,
+        )
+
+        return result
+
     def run(
         self,
         state: ProjectState,
     ) -> ProjectState:
         """
-        Build the research package.
+        Build the complete ResearchData object.
+
+        Parameters
+        ----------
+        state
+            Current project state.
+
+        Returns
+        -------
+        Updated ProjectState
         """
 
         if state.production_brief is None:
 
             raise ValueError(
-                "ProjectState does not contain a ProductionBrief."
+                "ProductionBrief must exist before ResearchAgent runs."
             )
 
-        production_brief = state.production_brief.model_dump()
+        LOGGER.info(
+            "Starting Research Agent"
+        )
+
+        production_brief = (
+            state.production_brief.model_dump()
+        )
 
         research = ResearchData()
 
-        # ======================================================
-        # Background
-        # ======================================================
+        #
+        # -------------------------------------------------------
+        # BACKGROUND
+        # -------------------------------------------------------
+        #
 
         result = self._generate_section(
 
-            "background",
+            task="background",
 
-            production_brief,
+            production_brief=production_brief,
 
         )
 
@@ -115,15 +158,17 @@ class ResearchAgent:
             "",
         )
 
-        # ======================================================
-        # Facts
-        # ======================================================
+        #
+        # -------------------------------------------------------
+        # FACTS
+        # -------------------------------------------------------
+        #
 
         result = self._generate_section(
 
-            "facts",
+            task="facts",
 
-            production_brief,
+            production_brief=production_brief,
 
         )
 
@@ -147,15 +192,17 @@ class ResearchAgent:
             [],
         )
 
-        # ======================================================
-        # Misconceptions
-        # ======================================================
+        #
+        # -------------------------------------------------------
+        # MISCONCEPTIONS
+        # -------------------------------------------------------
+        #
 
         result = self._generate_section(
 
-            "misconceptions",
+            task="misconceptions",
 
-            production_brief,
+            production_brief=production_brief,
 
         )
 
@@ -164,15 +211,17 @@ class ResearchAgent:
             [],
         )
 
-        # ======================================================
-        # Production Assets
-        # ======================================================
+        #
+        # -------------------------------------------------------
+        # PRODUCTION
+        # -------------------------------------------------------
+        #
 
         result = self._generate_section(
 
-            "production",
+            task="production",
 
-            production_brief,
+            production_brief=production_brief,
 
         )
 
@@ -201,15 +250,17 @@ class ResearchAgent:
             [],
         )
 
-        # ======================================================
-        # References
-        # ======================================================
+        #
+        # -------------------------------------------------------
+        # REFERENCES
+        # -------------------------------------------------------
+        #
 
         result = self._generate_section(
 
-            "references",
+            task="references",
 
-            production_brief,
+            production_brief=production_brief,
 
         )
 
@@ -238,6 +289,16 @@ class ResearchAgent:
             [],
         )
 
+        research.completed = True
+
         state.research = research
+
+        state.current_stage = "research"
+
+        state.status = "research_complete"
+
+        LOGGER.info(
+            "Research Agent completed successfully."
+        )
 
         return state

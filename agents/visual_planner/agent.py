@@ -1,13 +1,14 @@
 """
-AIStudio Storyboard Agent
+AIStudio Visual Planner Agent
 
-Generates the cinematic storyboard from the completed documentary
-script.
+Converts the cinematic storyboard into a complete visual production
+plan.
 
-The Storyboard transforms the written narration into a complete
-scene-by-scene production plan which becomes the blueprint for the
-Visual Planning, Image Generation, Motion Design and Video Assembly
-agents.
+The Visual Planner determines every visual asset required for the
+production before image generation begins.
+
+Output:
+    VisualData
 
 Author : AIStudio
 """
@@ -19,7 +20,7 @@ import logging
 
 from shared.models import (
     ProjectState,
-    StoryboardData,
+    VisualData,
 )
 
 from shared.services import (
@@ -27,22 +28,21 @@ from shared.services import (
     PromptService,
 )
 
-LOGGER = logging.getLogger("StoryboardAgent")
+LOGGER = logging.getLogger("VisualPlannerAgent")
 
 
-class StoryboardAgent:
+class VisualPlannerAgent:
     """
-    Produces the cinematic storyboard.
+    Produces the complete visual production plan.
 
     Input
     -----
     ProductionBrief
-    OutlineData
-    ScriptData
+    StoryboardData
 
     Output
     ------
-    StoryboardData
+    VisualData
     """
 
     def __init__(self) -> None:
@@ -58,7 +58,7 @@ class StoryboardAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Generate the cinematic storyboard.
+        Generate the visual production plan.
 
         Parameters
         ----------
@@ -73,23 +73,17 @@ class StoryboardAgent:
         if state.production_brief is None:
 
             raise ValueError(
-                "ProductionBrief must exist before StoryboardAgent runs."
+                "ProductionBrief must exist before VisualPlannerAgent runs."
             )
 
-        if state.outline is None:
+        if state.storyboard is None:
 
             raise ValueError(
-                "OutlineData must exist before StoryboardAgent runs."
-            )
-
-        if state.script is None:
-
-            raise ValueError(
-                "ScriptData must exist before StoryboardAgent runs."
+                "StoryboardData must exist before VisualPlannerAgent runs."
             )
 
         LOGGER.info(
-            "Starting Storyboard Agent"
+            "Starting Visual Planner Agent"
         )
 
         prompt = json.dumps(
@@ -98,11 +92,8 @@ class StoryboardAgent:
                 "production_brief":
                     state.production_brief.model_dump(),
 
-                "outline":
-                    state.outline.model_dump(),
-
-                "script":
-                    state.script.model_dump(),
+                "storyboard":
+                    state.storyboard.model_dump(),
             },
 
             indent=4,
@@ -121,16 +112,16 @@ class StoryboardAgent:
 
         )
 
-        storyboard = StoryboardData(**result)
+        visual_plan = VisualData(**result)
 
-        state.storyboard = storyboard
+        state.visuals = visual_plan
 
-        state.current_stage = "storyboard"
+        state.current_stage = "visual_planning"
 
-        state.status = "storyboard_complete"
+        state.status = "visual_plan_complete"
 
         LOGGER.info(
-            "Storyboard Agent completed successfully."
+            "Visual Planner Agent completed successfully."
         )
 
         return state

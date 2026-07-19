@@ -1,11 +1,11 @@
 """
 AIStudio Outline Agent
 
-Builds the documentary structure from the Production Brief and
-Research results.
+Creates the complete documentary structure from the Production Brief
+and Research package.
 
-Produces an OutlineData object that becomes the blueprint for the
-Script Writer.
+The Outline is the blueprint for the Script Writer and determines
+the pacing, narrative flow, emotional progression and viewer retention.
 
 Author : AIStudio
 """
@@ -13,6 +13,7 @@ Author : AIStudio
 from __future__ import annotations
 
 import json
+import logging
 
 from shared.models import (
     OutlineData,
@@ -23,6 +24,8 @@ from shared.services import (
     LLMService,
     PromptService,
 )
+
+LOGGER = logging.getLogger("OutlineAgent")
 
 
 class OutlineAgent:
@@ -44,7 +47,7 @@ class OutlineAgent:
         self.llm = LLMService()
 
         self.system_prompt = PromptService.load_prompt(
-            __file__
+            __file__,
         )
 
     def run(
@@ -52,20 +55,33 @@ class OutlineAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Builds the documentary outline.
+        Generate the documentary outline.
+
+        Parameters
+        ----------
+        state
+            Current project state.
+
+        Returns
+        -------
+        Updated ProjectState
         """
 
         if state.production_brief is None:
 
             raise ValueError(
-                "ProjectState does not contain a ProductionBrief."
+                "ProductionBrief must exist before OutlineAgent runs."
             )
 
         if state.research is None:
 
             raise ValueError(
-                "ProjectState does not contain ResearchData."
+                "ResearchData must exist before OutlineAgent runs."
             )
+
+        LOGGER.info(
+            "Starting Outline Agent"
+        )
 
         prompt = json.dumps(
 
@@ -93,6 +109,16 @@ class OutlineAgent:
 
         )
 
-        state.outline = OutlineData(**result)
+        outline = OutlineData(**result)
+
+        state.outline = outline
+
+        state.current_stage = "outline"
+
+        state.status = "outline_complete"
+
+        LOGGER.info(
+            "Outline Agent completed successfully."
+        )
 
         return state
