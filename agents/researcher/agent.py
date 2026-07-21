@@ -20,8 +20,12 @@ import json
 import logging
 
 from shared.models import (
-    Misconception,
+    BackgroundResponse,
+    FactsResponse,
+    MisconceptionsResponse,
+    ProductionResponse,
     ProjectState,
+    ReferencesResponse,
     ResearchData,
 )
 
@@ -127,28 +131,23 @@ class ResearchAgent:
         # -------------------------------------------------------
         #
 
-        result = self._generate_section(
+        background = BackgroundResponse(
 
-            task="background",
+            **self._generate_section(
 
-            production_brief=production_brief,
+                task="background",
+
+                production_brief=production_brief,
+
+            )
 
         )
 
-        research.executive_summary = result.get(
-            "executive_summary",
-            "",
-        )
+        research.executive_summary = background.executive_summary
 
-        research.historical_background = result.get(
-            "historical_background",
-            "",
-        )
+        research.historical_background = background.historical_background
 
-        research.scientific_background = result.get(
-            "scientific_background",
-            "",
-        )
+        research.scientific_background = background.scientific_background
 
         #
         # -------------------------------------------------------
@@ -156,33 +155,25 @@ class ResearchAgent:
         # -------------------------------------------------------
         #
 
-        result = self._generate_section(
+        facts = FactsResponse(
 
-            task="facts",
+            **self._generate_section(
 
-            production_brief=production_brief,
+                task="facts",
+
+                production_brief=production_brief,
+
+            )
 
         )
 
-        research.facts = result.get(
-            "facts",
-            [],
-        )
+        research.facts = facts.facts
 
-        research.statistics = result.get(
-            "statistics",
-            [],
-        )
+        research.statistics = facts.statistics
 
-        research.timeline = result.get(
-            "timeline",
-            [],
-        )
+        research.timeline = facts.timeline
 
-        research.technical_terms = result.get(
-            "technical_terms",
-            [],
-        )
+        research.technical_terms = facts.technical_terms
 
         #
         # -------------------------------------------------------
@@ -190,24 +181,19 @@ class ResearchAgent:
         # -------------------------------------------------------
         #
 
-        result = self._generate_section(
+        misconceptions = MisconceptionsResponse(
 
-            task="misconceptions",
+            **self._generate_section(
 
-            production_brief=production_brief,
+                task="misconceptions",
+
+                production_brief=production_brief,
+
+            )
 
         )
 
-        research.misconceptions = [
-
-            Misconception(**item)
-
-            for item in result.get(
-                "misconceptions",
-                [],
-            )
-
-        ]
+        research.misconceptions = misconceptions.misconceptions
 
         #
         # -------------------------------------------------------
@@ -215,38 +201,27 @@ class ResearchAgent:
         # -------------------------------------------------------
         #
 
-        result = self._generate_section(
+        production = ProductionResponse(
 
-            task="production",
+            **self._generate_section(
 
-            production_brief=production_brief,
+                task="production",
+
+                production_brief=production_brief,
+
+            )
 
         )
 
-        research.visual_opportunities = result.get(
-            "visual_opportunities",
-            [],
-        )
+        research.visual_opportunities = production.visual_opportunities
 
-        research.broll_opportunities = result.get(
-            "broll_opportunities",
-            [],
-        )
+        research.broll_opportunities = production.broll_opportunities
 
-        research.cinematic_moments = result.get(
-            "cinematic_moments",
-            [],
-        )
+        research.cinematic_moments = production.cinematic_moments
 
-        research.emotional_beats = result.get(
-            "emotional_beats",
-            [],
-        )
+        research.emotional_beats = production.emotional_beats
 
-        research.narration_highlights = result.get(
-            "narration_highlights",
-            [],
-        )
+        research.narration_highlights = production.narration_highlights
 
         #
         # -------------------------------------------------------
@@ -254,38 +229,27 @@ class ResearchAgent:
         # -------------------------------------------------------
         #
 
-        result = self._generate_section(
+        references = ReferencesResponse(
 
-            task="references",
+            **self._generate_section(
 
-            production_brief=production_brief,
+                task="references",
+
+                production_brief=production_brief,
+
+            )
 
         )
 
-        research.important_people = result.get(
-            "important_people",
-            [],
-        )
+        research.important_people = references.important_people
 
-        research.important_locations = result.get(
-            "important_locations",
-            [],
-        )
+        research.important_locations = references.important_locations
 
-        research.search_keywords = result.get(
-            "search_keywords",
-            [],
-        )
+        research.search_keywords = references.search_keywords
 
-        research.related_topics = result.get(
-            "related_topics",
-            [],
-        )
+        research.related_topics = references.related_topics
 
-        research.verification_notes = result.get(
-            "verification_notes",
-            [],
-        )
+        research.verification_notes = references.verification_notes
 
         #
         # Save into pipeline state

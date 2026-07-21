@@ -15,6 +15,14 @@ from .research import (
     Misconception,
 )
 
+from .research_sections import (
+    BackgroundResponse,
+    FactsResponse,
+    MisconceptionsResponse,
+    ProductionResponse,
+    ReferencesResponse,
+)
+
 from .outline import (
     OutlineData,
     OutlineScene,
@@ -101,6 +109,12 @@ __all__ = [
 
     "ResearchData",
     "Misconception",
+
+    "BackgroundResponse",
+    "FactsResponse",
+    "MisconceptionsResponse",
+    "ProductionResponse",
+    "ReferencesResponse",
 
     "OutlineData",
     "OutlineScene",
