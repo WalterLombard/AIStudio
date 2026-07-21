@@ -4,21 +4,19 @@ You are writing ONE documentary scene only.
 
 The Production Brief defines the documentary style.
 
-The Outline Scene defines the structure.
+The Outline Scene defines the structure of this scene.
 
-The Research provides factual information.
+The Research contains verified factual information.
 
-Your job is to transform ONE outline scene into cinematic documentary narration.
+Your task is to transform ONE outline scene into professional documentary narration.
 
-Do NOT write the entire documentary.
+You are NOT writing the entire documentary.
 
-Do NOT create additional scenes.
+You are NOT creating storyboard shots.
 
-Do NOT change the scene number.
+You are NOT planning camera movements.
 
-Do NOT change the title.
-
-Do NOT change the duration.
+You are NOT writing image prompts.
 
 Return ONLY valid JSON.
 
@@ -26,9 +24,9 @@ Use this schema exactly:
 
 {
   "scene": {
-    "scene": 1,
+    "scene_number": 1,
     "title": "",
-    "duration": 0,
+    "duration": 60,
     "lines": [
       {
         "order": 1,
@@ -40,66 +38,98 @@ Use this schema exactly:
   }
 }
 
+Inputs
+
+• Production Brief
+• Outline Scene
+• Research
+
 Requirements
 
-• Produce ONLY ONE scene.
+Generate ONLY ONE scene.
 
-• scene MUST match the supplied Outline Scene.
+scene_number MUST match the supplied Outline Scene.
 
-• title MUST match the supplied Outline Scene title.
+title MUST match the supplied Outline Scene title.
 
-• duration MUST match the supplied Outline Scene duration.
+duration MUST match the supplied Outline Scene duration.
 
-• Expand ONLY the supplied outline scene.
+Expand ONLY the supplied outline scene.
 
-• Follow the Production Brief style and tone.
+Follow the Production Brief style and tone.
 
-• Use the Research naturally.
+Use only verified information from the supplied Research.
 
-• Never invent facts.
+Never invent facts.
 
-• Never contradict the research.
+Never contradict the supplied Research.
 
-• Do not reference scenes that have not yet happened.
+Do not reference future scenes.
 
-• Do not summarize future events.
+Do not summarize later parts of the documentary.
 
 Narration Guidelines
 
-• Sound like a premium BBC Earth / National Geographic documentary.
+Write in the style of a premium BBC Earth or National Geographic documentary.
 
-• Hook immediately if this is Scene 1.
+If this is Scene 1, immediately capture the viewer's attention.
 
-• Build curiosity naturally.
+Use vivid, cinematic language.
 
-• Use vivid cinematic language.
+Vary sentence length naturally.
 
-• Mix short and long sentences.
+Build curiosity throughout the scene.
 
-• End naturally so the following narration block continues smoothly.
+End the final narration block with a smooth transition into the next scene.
 
 Scene Line Guidelines
 
-• Split the narration into logical narration blocks.
+Split the narration into logical narration blocks.
 
-• Each narration block should describe one coherent idea.
+Each narration block should communicate one clear idea.
 
-• Normally produce between 3 and 8 narration blocks.
+Normally produce between 4 and 8 narration blocks.
 
-• order starts at 1 and increments sequentially.
+order begins at 1 and increments sequentially.
 
-• narration contains spoken voice-over only.
+narration contains ONLY spoken voice-over.
 
-• visual_description describes only what appears on screen during that narration block.
+visual_description briefly describes what should be visible while this narration is spoken.
 
-• duration is the estimated duration of that narration block in seconds.
+Keep visual descriptions high level.
 
-• The sum of all line durations should approximately equal the scene duration.
+Do NOT describe:
 
-Output ONLY JSON.
+• camera angles
 
-No markdown.
+• shot types
 
-No explanations.
+• camera movement
 
-No comments.
+• lenses
+
+• image prompts
+
+• cinematic composition
+
+Those will be generated later by dedicated production agents.
+
+duration is the estimated speaking time for that narration block.
+
+The sum of all narration durations should approximately equal the supplied scene duration.
+
+Rules
+
+Do NOT write storyboard instructions.
+
+Do NOT write production notes.
+
+Do NOT write image prompts.
+
+Do NOT write camera directions.
+
+Do NOT write markdown.
+
+Do NOT explain your reasoning.
+
+Return ONLY valid JSON.

@@ -1,7 +1,7 @@
 """
-AIStudio Project State
+AIStudio Scene State
 
-Central state object shared by every AI agent.
+Stores every piece of information for one documentary scene.
 
 Author : AIStudio
 """
@@ -10,58 +10,45 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from .project import ProjectInfo
-from .production_brief import ProductionBrief
-from .research import ResearchData
-from .outline import OutlineData
-from .script import ScriptData
-from .storyboard import StoryboardData
-from .visuals import VisualData
-from .images import ImageData
-from .motion import MotionData
-from .narration import NarrationData
-from .audio import AudioData
-from .music import MusicLibrary
-from .sfx import SFXLibrary
-from .master_audio import MasterAudioData
-from .video import VideoData
-from .qa import QAReport
+from .outline import OutlineScene
+from .script import ScriptScene
+from .storyboard import StoryboardScene
+from .visuals import VisualAsset
+from .images import ImageAsset
+from .motion import CameraMove
+from .narration import NarrationSegment
+from .music import MusicCue, MusicAsset
+from .sfx import SFXCue, SFXAsset
+from .audio import AudioAsset
 
 
-class ProjectState(BaseModel):
+class SceneState(BaseModel):
+    """
+    Complete production state for one documentary scene.
+    """
 
-    project_info: ProjectInfo = ProjectInfo()
+    scene_number: int
 
-    production_brief: ProductionBrief | None = None
+    outline: OutlineScene | None = None
 
-    research: ResearchData | None = None
+    script: ScriptScene | None = None
 
-    outline: OutlineData | None = None
+    storyboard: StoryboardScene | None = None
 
-    script: ScriptData | None = None
+    visuals: list[VisualAsset] = []
 
-    storyboard: StoryboardData | None = None
+    images: list[ImageAsset] = []
 
-    visuals: VisualData | None = None
+    motion: CameraMove | None = None
 
-    images: ImageData | None = None
+    narration: NarrationSegment | None = None
 
-    motion: MotionData | None = None
+    music_plan: MusicCue | None = None
 
-    narration: NarrationData | None = None
+    music_asset: MusicAsset | None = None
 
-    audio: AudioData | None = None
+    sfx_plan: list[SFXCue] = []
 
-    music: MusicLibrary | None = None
+    sfx_assets: list[SFXAsset] = []
 
-    sfx: SFXLibrary | None = None
-
-    master_audio: MasterAudioData | None = None
-
-    video: VideoData | None = None
-
-    qa: QAReport | None = None
-
-    current_stage: str = "created"
-
-    status: str = "idle"
+    narration_audio: AudioAsset | None = None
