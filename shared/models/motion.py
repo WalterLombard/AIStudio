@@ -1,10 +1,7 @@
 """
 AIStudio Motion Models
 
-Defines the cinematic camera movement for every storyboard scene.
-
-The Motion Designer never creates video. It creates a production plan
-that the Video Compiler later executes.
+Defines the cinematic camera movement for every generated image.
 
 Author : AIStudio
 """
@@ -16,7 +13,7 @@ from pydantic import BaseModel, Field
 
 class CameraMove(BaseModel):
     """
-    Defines the camera movement for a single storyboard scene.
+    Camera movement for one generated image.
     """
 
     scene_id: str = ""
@@ -52,7 +49,7 @@ class CameraMove(BaseModel):
 
 class MotionData(BaseModel):
     """
-    Complete cinematic motion plan for the documentary.
+    Complete motion plan.
     """
 
     scenes: list[CameraMove] = Field(
@@ -60,3 +57,11 @@ class MotionData(BaseModel):
     )
 
     total_duration: float = 0.0
+
+
+class MotionSceneResponse(BaseModel):
+    """
+    Returned by the LLM when generating ONE camera move.
+    """
+
+    scene: CameraMove

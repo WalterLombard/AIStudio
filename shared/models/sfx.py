@@ -43,6 +43,14 @@ class SFXData(BaseModel):
     )
 
 
+class SFXSceneResponse(BaseModel):
+    """
+    Returned by the LLM when generating ONE SFX cue.
+    """
+
+    cue: SFXCue
+
+
 class SFXAsset(BaseModel):
     """
     One generated sound effect.

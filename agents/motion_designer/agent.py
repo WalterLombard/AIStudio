@@ -1,13 +1,10 @@
 """
 AIStudio Motion Designer Agent
 
-Creates the cinematic motion plan for the documentary.
+Generates the cinematic motion plan one image at a time.
 
-The Motion Designer analyses the storyboard together with the
-generated image assets and determines camera movement, timing,
-transitions and pacing.
-
-The output is MotionData.
+Each generated image receives its own camera movement which keeps
+prompts small, avoids LLM timeouts and allows individual regeneration.
 
 Author : AIStudio
 """
@@ -15,9 +12,11 @@ Author : AIStudio
 from __future__ import annotations
 
 import json
+import logging
 
 from shared.models import (
     MotionData,
+    MotionSceneResponse,
     ProjectState,
 )
 
@@ -27,11 +26,10 @@ from shared.services import (
     PromptService,
 )
 
+LOGGER = logging.getLogger("MotionDesignerAgent")
+
 
 class MotionDesignerAgent:
-    """
-    Produces the complete cinematic motion plan.
-    """
 
     def __init__(self) -> None:
 
@@ -43,45 +41,36 @@ class MotionDesignerAgent:
             __file__,
         )
 
-    def run(
+    def _generate_scene(
         self,
-        state: ProjectState,
-    ) -> ProjectState:
+        storyboard_scene: dict,
+        image_asset: dict,
+    ) -> MotionSceneResponse:
         """
-        Build the cinematic motion plan.
+        Generate one camera move.
         """
-
-        if state.storyboard is None:
-
-            raise ValueError(
-                "ProjectState does not contain StoryboardData."
-            )
-
-        image_assets = [
-
-            asset.model_dump()
-
-            for asset in self.assets.get_assets_by_type(
-                "image"
-            )
-
-        ]
 
         prompt = json.dumps(
 
             {
 
-                "storyboard":
-                    state.storyboard.model_dump(),
+                "storyboard_scene": storyboard_scene,
 
-                "image_assets":
-                    image_assets,
+                "image_asset": image_asset,
 
             },
 
             indent=4,
 
             ensure_ascii=False,
+
+        )
+
+        LOGGER.info(
+
+            "Generating motion for %s",
+
+            image_asset["asset_id"],
 
         )
 
@@ -95,12 +84,69 @@ class MotionDesignerAgent:
 
         )
 
-        state.motion = MotionData(
-            **result
+        return MotionSceneResponse(**result)
+
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+
+        if state.storyboard is None:
+
+            raise ValueError(
+                "StoryboardData must exist before MotionDesignerAgent runs."
+            )
+
+        motion = MotionData()
+
+        image_assets = [
+
+            asset
+
+            for asset in self.assets.get_assets_by_type(
+                "image"
+            )
+
+        ]
+
+        for storyboard_scene, image_asset in zip(
+
+            state.storyboard.scenes,
+
+            image_assets,
+
+            strict=False,
+
+        ):
+
+            response = self._generate_scene(
+
+                storyboard_scene.model_dump(),
+
+                image_asset.model_dump(),
+
+            )
+
+            motion.scenes.append(
+                response.scene
+            )
+
+        motion.total_duration = sum(
+
+            scene.duration
+
+            for scene in motion.scenes
+
         )
+
+        state.motion = motion
 
         state.current_stage = "motion"
 
         state.status = "motion_complete"
+
+        LOGGER.info(
+            "Motion Designer Agent completed successfully."
+        )
 
         return state

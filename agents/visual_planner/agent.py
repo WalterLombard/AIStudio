@@ -1,14 +1,11 @@
 """
 AIStudio Visual Planner Agent
 
-Converts the cinematic storyboard into a complete visual production
-plan.
+Generates the visual production plan one storyboard scene at a time.
 
-The Visual Planner determines every visual asset required for the
-production before image generation begins.
-
-Output:
-    VisualData
+Each storyboard scene produces exactly one visual asset. This keeps
+prompts small, avoids LLM timeouts and allows failed scenes to be
+regenerated independently.
 
 Author : AIStudio
 """
@@ -21,6 +18,7 @@ import logging
 from shared.models import (
     ProjectState,
     VisualData,
+    VisualSceneResponse,
 )
 
 from shared.services import (
@@ -32,18 +30,6 @@ LOGGER = logging.getLogger("VisualPlannerAgent")
 
 
 class VisualPlannerAgent:
-    """
-    Produces the complete visual production plan.
-
-    Input
-    -----
-    ProductionBrief
-    StoryboardData
-
-    Output
-    ------
-    VisualData
-    """
 
     def __init__(self) -> None:
 
@@ -53,22 +39,52 @@ class VisualPlannerAgent:
             __file__,
         )
 
+    def _generate_scene(
+        self,
+        production_brief: dict,
+        storyboard_scene: dict,
+    ) -> VisualSceneResponse:
+        """
+        Generate one visual asset.
+        """
+
+        prompt = json.dumps(
+
+            {
+                "production_brief": production_brief,
+                "storyboard_scene": storyboard_scene,
+            },
+
+            indent=4,
+
+            ensure_ascii=False,
+
+        )
+
+        LOGGER.info(
+
+            "Generating visual asset for storyboard scene %s",
+
+            storyboard_scene["scene"],
+
+        )
+
+        result = self.llm.generate_json(
+
+            system=self.system_prompt,
+
+            prompt=prompt,
+
+            temperature=0.20,
+
+        )
+
+        return VisualSceneResponse(**result)
+
     def run(
         self,
         state: ProjectState,
     ) -> ProjectState:
-        """
-        Generate the visual production plan.
-
-        Parameters
-        ----------
-        state
-            Current project state.
-
-        Returns
-        -------
-        Updated ProjectState
-        """
 
         if state.production_brief is None:
 
@@ -86,33 +102,27 @@ class VisualPlannerAgent:
             "Starting Visual Planner Agent"
         )
 
-        prompt = json.dumps(
+        production_brief = state.production_brief.model_dump()
 
-            {
-                "production_brief":
-                    state.production_brief.model_dump(),
+        visual_plan = VisualData()
 
-                "storyboard":
-                    state.storyboard.model_dump(),
-            },
+        #
+        # Generate one visual asset per storyboard scene
+        #
 
-            indent=4,
+        for storyboard_scene in state.storyboard.scenes:
 
-            ensure_ascii=False,
+            response = self._generate_scene(
 
-        )
+                production_brief=production_brief,
 
-        result = self.llm.generate_json(
+                storyboard_scene=storyboard_scene.model_dump(),
 
-            system=self.system_prompt,
+            )
 
-            prompt=prompt,
-
-            temperature=0.20,
-
-        )
-
-        visual_plan = VisualData(**result)
+            visual_plan.assets.append(
+                response.asset
+            )
 
         state.visuals = visual_plan
 

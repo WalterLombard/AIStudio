@@ -1,7 +1,14 @@
 """
 AIStudio Sound Effects Generator
 
-Generates cinematic sound effects for every documentary scene.
+Generates documentary sound effects one scene at a time.
+
+Each scene is planned independently to keep prompts small,
+avoid LLM timeouts and allow failed scenes to be regenerated
+without rerunning the entire sound effects plan.
+
+After planning completes, the SFXService generates the
+actual sound effect assets.
 
 Author : AIStudio
 """
@@ -16,6 +23,7 @@ from shared.models import (
     SFXAsset,
     SFXData,
     SFXLibrary,
+    SFXSceneResponse,
 )
 
 from shared.services import (
@@ -27,9 +35,6 @@ from shared.services import (
 
 
 class SFXGeneratorAgent:
-    """
-    Produces documentary sound effects.
-    """
 
     def __init__(self) -> None:
 
@@ -43,33 +48,20 @@ class SFXGeneratorAgent:
             __file__,
         )
 
-    def run(
+    def _generate_scene(
         self,
-        state: ProjectState,
-    ) -> ProjectState:
-
-        if state.motion is None:
-
-            raise ValueError(
-                "ProjectState does not contain MotionData."
-            )
-
-        if state.storyboard is None:
-
-            raise ValueError(
-                "ProjectState does not contain StoryboardData."
-            )
+        storyboard_scene: dict,
+        motion_scene: dict,
+    ) -> SFXSceneResponse:
+        """
+        Generate one sound effects cue.
+        """
 
         prompt = json.dumps(
 
             {
-
-                "storyboard":
-                    state.storyboard.model_dump(),
-
-                "motion":
-                    state.motion.model_dump(),
-
+                "storyboard_scene": storyboard_scene,
+                "motion_scene": motion_scene,
             },
 
             indent=4,
@@ -88,9 +80,54 @@ class SFXGeneratorAgent:
 
         )
 
-        plan = SFXData(
-            **result
-        )
+        return SFXSceneResponse(**result)
+
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+
+        if state.motion is None:
+
+            raise ValueError(
+                "ProjectState does not contain MotionData."
+            )
+
+        if state.storyboard is None:
+
+            raise ValueError(
+                "ProjectState does not contain StoryboardData."
+            )
+
+        plan = SFXData()
+
+        #
+        # Generate one cue per scene
+        #
+
+        for storyboard_scene, motion_scene in zip(
+
+            state.storyboard.scenes,
+
+            state.motion.scenes,
+
+        ):
+
+            response = self._generate_scene(
+
+                storyboard_scene=storyboard_scene.model_dump(),
+
+                motion_scene=motion_scene.model_dump(),
+
+            )
+
+            plan.cues.append(
+                response.cue
+            )
+
+        #
+        # Generate SFX assets
+        #
 
         library = SFXLibrary()
 

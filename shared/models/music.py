@@ -38,9 +38,15 @@ class MusicData(BaseModel):
     Complete music plan.
     """
 
-    cues: list[MusicCue] = Field(
-        default_factory=list
-    )
+    cues: list[MusicCue] = Field(default_factory=list)
+
+
+class MusicSceneResponse(BaseModel):
+    """
+    Returned by the LLM when generating ONE music cue.
+    """
+
+    cue: MusicCue
 
 
 class MusicAsset(BaseModel):
@@ -62,6 +68,4 @@ class MusicLibrary(BaseModel):
     Generated music assets.
     """
 
-    assets: list[MusicAsset] = Field(
-        default_factory=list
-    )
+    assets: list[MusicAsset] = Field(default_factory=list)

@@ -20,6 +20,7 @@ import json
 import logging
 
 from shared.models import (
+    Misconception,
     ProjectState,
     ResearchData,
 )
@@ -85,7 +86,7 @@ class ResearchAgent:
 
             prompt=prompt,
 
-            temperature=0.2,
+            temperature=0.20,
 
         )
 
@@ -197,10 +198,16 @@ class ResearchAgent:
 
         )
 
-        research.misconceptions = result.get(
-            "misconceptions",
-            [],
-        )
+        research.misconceptions = [
+
+            Misconception(**item)
+
+            for item in result.get(
+                "misconceptions",
+                [],
+            )
+
+        ]
 
         #
         # -------------------------------------------------------

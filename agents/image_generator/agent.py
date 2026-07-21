@@ -1,123 +1,136 @@
 """
 AIStudio Image Generator Agent
 
-Generates every AI image required for the documentary.
+Generates one image at a time from the Visual Plan.
 
-Every generated image is immediately registered with the
-Asset Service.
+Each visual asset is processed independently which keeps prompts
+small, allows retries and avoids losing progress.
 
 Author : AIStudio
 """
 
 from __future__ import annotations
 
+import json
 import logging
 
 from shared.models import (
-    AssetRecord,
-    ImageAsset,
-    ImageData,
     ProjectState,
+    ImageData,
+    ImageSceneResponse,
 )
 
 from shared.services import (
-    AssetService,
-    ImageService,
+    LLMService,
+    PromptService,
 )
 
 LOGGER = logging.getLogger("ImageGeneratorAgent")
 
 
 class ImageGeneratorAgent:
-    """
-    Generates all storyboard images.
-    """
 
     def __init__(self) -> None:
 
-        self.image_service = ImageService()
+        self.llm = LLMService()
 
-        self.asset_service = AssetService()
+        self.system_prompt = PromptService.load_prompt(
+            __file__,
+        )
+
+    def _generate_image(
+        self,
+        production_brief: dict,
+        visual_asset: dict,
+    ) -> ImageSceneResponse:
+        """
+        Generate one image.
+        """
+
+        prompt = json.dumps(
+
+            {
+                "production_brief": production_brief,
+                "visual_asset": visual_asset,
+            },
+
+            indent=4,
+
+            ensure_ascii=False,
+
+        )
+
+        LOGGER.info(
+
+            "Generating image %s",
+
+            visual_asset["asset_id"],
+
+        )
+
+        result = self.llm.generate_json(
+
+            system=self.system_prompt,
+
+            prompt=prompt,
+
+            temperature=0.15,
+
+        )
+
+        return ImageSceneResponse(**result)
 
     def run(
         self,
         state: ProjectState,
     ) -> ProjectState:
 
+        if state.production_brief is None:
+
+            raise ValueError(
+                "ProductionBrief must exist before ImageGeneratorAgent runs."
+            )
+
         if state.visuals is None:
 
             raise ValueError(
-                "VisualData must exist before image generation."
+                "VisualData must exist before ImageGeneratorAgent runs."
             )
 
         LOGGER.info(
-            "Starting Image Generation..."
+            "Starting Image Generator Agent"
         )
 
-        image_library = ImageData()
+        production_brief = state.production_brief.model_dump()
 
-        for visual in state.visuals.assets:
+        images = ImageData()
 
-            generated = self.image_service.generate_image(
-                visual
-            )
+        #
+        # Generate one image at a time
+        #
 
-            asset = AssetRecord(
+        for visual_asset in state.visuals.assets:
 
-                asset_type="image",
+            response = self._generate_image(
 
-                stage="image_generation",
+                production_brief=production_brief,
 
-                provider=generated.provider,
-
-                filename=generated.filename,
-
-                prompt=generated.prompt,
-
-                source_scene=generated.asset_id,
-
-                width=generated.width,
-
-                height=generated.height,
-
-                metadata=generated.metadata,
+                visual_asset=visual_asset.model_dump(),
 
             )
 
-            asset = self.asset_service.register(
-                asset
+            images.images.append(
+                response.image
             )
 
-            image_library.assets.append(
+        state.images = images
 
-                ImageAsset(
-
-                    asset_id=asset.asset_id,
-
-                    filename=asset.filename,
-
-                    prompt=asset.prompt,
-
-                    provider=asset.provider,
-
-                    width=asset.width,
-
-                    height=asset.height,
-
-                    metadata=asset.metadata,
-
-                )
-
-            )
-
-        state.images = image_library
-
-        state.current_stage = "image_generation"
+        state.current_stage = "images"
 
         state.status = "images_complete"
 
         LOGGER.info(
-            "Image Generation Complete."
+            "Image Generator Agent completed successfully."
         )
 
         return state

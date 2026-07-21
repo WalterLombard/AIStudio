@@ -22,9 +22,9 @@ from .outline import (
 )
 
 from .script import (
-    ScriptLine,
-    ScriptScene,
     ScriptData,
+    ScriptScene,
+    ScriptLine,
     ScriptSceneResponse,
 )
 
@@ -38,21 +38,25 @@ from .storyboard import (
 from .visuals import (
     VisualAsset,
     VisualData,
+    VisualSceneResponse,
 )
 
 from .images import (
     ImageAsset,
     ImageData,
+    ImageSceneResponse,
 )
 
 from .motion import (
     CameraMove,
     MotionData,
+    MotionSceneResponse,
 )
 
 from .narration import (
     NarrationSegment,
     NarrationData,
+    NarrationSceneResponse,
 )
 
 from .audio import (
@@ -63,6 +67,7 @@ from .audio import (
 from .music import (
     MusicCue,
     MusicData,
+    MusicSceneResponse,
     MusicAsset,
     MusicLibrary,
 )
@@ -70,6 +75,7 @@ from .music import (
 from .sfx import (
     SFXCue,
     SFXData,
+    SFXSceneResponse,
     SFXAsset,
     SFXLibrary,
 )
@@ -87,7 +93,6 @@ from .asset import (
 
 from .project_state import ProjectState
 
-
 __all__ = [
 
     "ProjectInfo",
@@ -101,9 +106,9 @@ __all__ = [
     "OutlineScene",
     "OutlineSceneResponse",
 
-    "ScriptLine",
-    "ScriptScene",
     "ScriptData",
+    "ScriptScene",
+    "ScriptLine",
     "ScriptSceneResponse",
 
     "StoryboardData",
@@ -113,26 +118,32 @@ __all__ = [
 
     "VisualAsset",
     "VisualData",
+    "VisualSceneResponse",
 
     "ImageAsset",
     "ImageData",
+    "ImageSceneResponse",
 
     "CameraMove",
     "MotionData",
+    "MotionSceneResponse",
 
     "NarrationSegment",
     "NarrationData",
+    "NarrationSceneResponse",
 
     "AudioAsset",
     "AudioData",
 
     "MusicCue",
     "MusicData",
+    "MusicSceneResponse",
     "MusicAsset",
     "MusicLibrary",
 
     "SFXCue",
     "SFXData",
+    "SFXSceneResponse",
     "SFXAsset",
     "SFXLibrary",
 

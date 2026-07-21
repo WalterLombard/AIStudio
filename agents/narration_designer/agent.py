@@ -1,7 +1,11 @@
 """
 AIStudio Narration Designer Agent
 
-Creates the narration performance plan from the documentary script.
+Generates the narration performance one scene at a time.
+
+Each script scene is converted independently which keeps prompts
+small, avoids LLM timeouts and allows regeneration of individual
+segments.
 
 Author : AIStudio
 """
@@ -9,9 +13,11 @@ Author : AIStudio
 from __future__ import annotations
 
 import json
+import logging
 
 from shared.models import (
     NarrationData,
+    NarrationSceneResponse,
     ProjectState,
 )
 
@@ -20,11 +26,10 @@ from shared.services import (
     PromptService,
 )
 
+LOGGER = logging.getLogger("NarrationDesignerAgent")
+
 
 class NarrationDesignerAgent:
-    """
-    Produces the narration performance plan.
-    """
 
     def __init__(self) -> None:
 
@@ -33,6 +38,51 @@ class NarrationDesignerAgent:
         self.system_prompt = PromptService.load_prompt(
             __file__,
         )
+
+    def _generate_scene(
+        self,
+        script_scene: dict,
+        motion_scene: dict,
+    ) -> NarrationSceneResponse:
+        """
+        Generate one narration segment.
+        """
+
+        prompt = json.dumps(
+
+            {
+
+                "script_scene": script_scene,
+
+                "motion_scene": motion_scene,
+
+            },
+
+            indent=4,
+
+            ensure_ascii=False,
+
+        )
+
+        LOGGER.info(
+
+            "Generating narration for scene %s",
+
+            script_scene["scene"],
+
+        )
+
+        result = self.llm.generate_json(
+
+            system=self.system_prompt,
+
+            prompt=prompt,
+
+            temperature=0.20,
+
+        )
+
+        return NarrationSceneResponse(**result)
 
     def run(
         self,
@@ -51,40 +101,38 @@ class NarrationDesignerAgent:
                 "ProjectState does not contain MotionData."
             )
 
-        prompt = json.dumps(
+        narration = NarrationData()
 
-            {
+        for script_scene, motion_scene in zip(
 
-                "script":
-                    state.script.model_dump(),
+            state.script.scenes,
 
-                "motion":
-                    state.motion.model_dump(),
+            state.motion.scenes,
 
-            },
+            strict=False,
 
-            indent=4,
+        ):
 
-            ensure_ascii=False,
+            response = self._generate_scene(
 
-        )
+                script_scene.model_dump(),
 
-        result = self.llm.generate_json(
+                motion_scene.model_dump(),
 
-            system=self.system_prompt,
+            )
 
-            prompt=prompt,
+            narration.segments.append(
+                response.segment
+            )
 
-            temperature=0.20,
-
-        )
-
-        state.narration = NarrationData(
-            **result
-        )
+        state.narration = narration
 
         state.current_stage = "narration"
 
         state.status = "narration_complete"
+
+        LOGGER.info(
+            "Narration Designer Agent completed successfully."
+        )
 
         return state

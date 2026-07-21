@@ -1,7 +1,19 @@
+"""
+AIStudio Visual Models
+
+Defines all visual assets produced by the Visual Planner.
+
+Author : AIStudio
+"""
+
 from pydantic import BaseModel, Field
 
 
 class VisualAsset(BaseModel):
+    """
+    A single visual asset generated for one storyboard scene.
+    """
+
     asset_id: str = ""
 
     prompt: str = ""
@@ -22,4 +34,17 @@ class VisualAsset(BaseModel):
 
 
 class VisualData(BaseModel):
+    """
+    Complete visual production plan.
+    """
+
     assets: list[VisualAsset] = Field(default_factory=list)
+
+
+class VisualSceneResponse(BaseModel):
+    """
+    Returned by the LLM when generating ONE storyboard scene's
+    visual asset.
+    """
+
+    asset: VisualAsset

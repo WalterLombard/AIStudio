@@ -1,8 +1,14 @@
 """
 AIStudio Music Generator Agent
 
-Creates the complete background music plan and generates the
-music assets.
+Generates the documentary music plan one scene at a time.
+
+Each scene is planned independently to keep prompts small,
+avoid LLM timeouts and allow failed scenes to be regenerated
+without rerunning the entire music plan.
+
+After planning completes, the MusicService generates the
+actual music assets.
 
 Author : AIStudio
 """
@@ -16,6 +22,7 @@ from shared.models import (
     MusicAsset,
     MusicData,
     MusicLibrary,
+    MusicSceneResponse,
     ProjectState,
 )
 
@@ -28,9 +35,6 @@ from shared.services import (
 
 
 class MusicGeneratorAgent:
-    """
-    Produces documentary background music.
-    """
 
     def __init__(self) -> None:
 
@@ -44,33 +48,20 @@ class MusicGeneratorAgent:
             __file__,
         )
 
-    def run(
+    def _generate_scene(
         self,
-        state: ProjectState,
-    ) -> ProjectState:
-
-        if state.motion is None:
-
-            raise ValueError(
-                "ProjectState does not contain MotionData."
-            )
-
-        if state.narration is None:
-
-            raise ValueError(
-                "ProjectState does not contain NarrationData."
-            )
+        motion_scene: dict,
+        narration_scene: dict,
+    ) -> MusicSceneResponse:
+        """
+        Generate one music cue.
+        """
 
         prompt = json.dumps(
 
             {
-
-                "motion":
-                    state.motion.model_dump(),
-
-                "narration":
-                    state.narration.model_dump(),
-
+                "motion_scene": motion_scene,
+                "narration_scene": narration_scene,
             },
 
             indent=4,
@@ -89,9 +80,54 @@ class MusicGeneratorAgent:
 
         )
 
-        music_plan = MusicData(
-            **result
-        )
+        return MusicSceneResponse(**result)
+
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+
+        if state.motion is None:
+
+            raise ValueError(
+                "ProjectState does not contain MotionData."
+            )
+
+        if state.narration is None:
+
+            raise ValueError(
+                "ProjectState does not contain NarrationData."
+            )
+
+        music_plan = MusicData()
+
+        #
+        # Generate one cue per scene
+        #
+
+        for motion_scene, narration_scene in zip(
+
+            state.motion.scenes,
+
+            state.narration.scenes,
+
+        ):
+
+            response = self._generate_scene(
+
+                motion_scene=motion_scene.model_dump(),
+
+                narration_scene=narration_scene.model_dump(),
+
+            )
+
+            music_plan.cues.append(
+                response.cue
+            )
+
+        #
+        # Generate music assets
+        #
 
         library = MusicLibrary()
 

@@ -3,9 +3,6 @@ AIStudio Narration Models
 
 Defines the narration performance plan.
 
-This model is produced by the Narration Designer and consumed by the
-Voice Generator.
-
 Author : AIStudio
 """
 
@@ -16,7 +13,7 @@ from pydantic import BaseModel, Field
 
 class NarrationSegment(BaseModel):
     """
-    Performance instructions for one narration segment.
+    Performance instructions for one script scene.
     """
 
     scene_id: str = ""
@@ -42,9 +39,17 @@ class NarrationSegment(BaseModel):
 
 class NarrationData(BaseModel):
     """
-    Complete narration performance.
+    Complete narration plan.
     """
 
     segments: list[NarrationSegment] = Field(
         default_factory=list
     )
+
+
+class NarrationSceneResponse(BaseModel):
+    """
+    Returned by the LLM when generating ONE narration segment.
+    """
+
+    segment: NarrationSegment
