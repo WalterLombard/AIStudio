@@ -1,7 +1,7 @@
 """
-AIStudio Scene State
+AIStudio Project State
 
-Stores every piece of information for one documentary scene.
+Central state object shared by every AI agent.
 
 Author : AIStudio
 """
@@ -10,45 +10,68 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from .outline import OutlineScene
-from .script import ScriptScene
-from .storyboard import StoryboardScene
-from .visuals import VisualAsset
-from .images import ImageAsset
-from .motion import CameraMove
-from .narration import NarrationSegment
-from .music import MusicCue, MusicAsset
-from .sfx import SFXCue, SFXAsset
-from .audio import AudioAsset
+from .project import ProjectInfo
+from .production_brief import ProductionBrief
+from .research import ResearchData
+from .outline import OutlineData
+from .script import ScriptData
+from .storyboard import StoryboardData
+from .visuals import VisualData
+from .shot import ShotData
+from .images import ImageData
+from .motion import MotionData
+from .narration import NarrationData
+from .audio import AudioData
+from .music import MusicLibrary
+from .sfx import SFXLibrary
+from .master_audio import MasterAudioData
+from .video import VideoData
+from .qa import QAReport
 
 
-class SceneState(BaseModel):
+class ProjectState(BaseModel):
     """
-    Complete production state for one documentary scene.
+    Global project state shared by every AIStudio agent.
     """
 
-    scene_number: int
+    project_info: ProjectInfo = ProjectInfo()
 
-    outline: OutlineScene | None = None
+    production_brief: ProductionBrief | None = None
 
-    script: ScriptScene | None = None
+    research: ResearchData | None = None
 
-    storyboard: StoryboardScene | None = None
+    outline: OutlineData | None = None
 
-    visuals: list[VisualAsset] = []
+    script: ScriptData | None = None
 
-    images: list[ImageAsset] = []
+    storyboard: StoryboardData | None = None
 
-    motion: CameraMove | None = None
+    visuals: VisualData | None = None
 
-    narration: NarrationSegment | None = None
+    #
+    # NEW
+    # Complete cinematic shot plan.
+    #
+    shots: ShotData | None = None
 
-    music_plan: MusicCue | None = None
+    images: ImageData | None = None
 
-    music_asset: MusicAsset | None = None
+    motion: MotionData | None = None
 
-    sfx_plan: list[SFXCue] = []
+    narration: NarrationData | None = None
 
-    sfx_assets: list[SFXAsset] = []
+    audio: AudioData | None = None
 
-    narration_audio: AudioAsset | None = None
+    music: MusicLibrary | None = None
+
+    sfx: SFXLibrary | None = None
+
+    master_audio: MasterAudioData | None = None
+
+    video: VideoData | None = None
+
+    qa: QAReport | None = None
+
+    current_stage: str = "created"
+
+    status: str = "idle"

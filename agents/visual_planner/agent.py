@@ -3,9 +3,9 @@ AIStudio Visual Planner Agent
 
 Generates the visual production plan one storyboard scene at a time.
 
-Each storyboard scene produces exactly one visual asset. This keeps
-prompts small, avoids LLM timeouts and allows failed scenes to be
-regenerated independently.
+Each storyboard scene produces exactly one visual production
+specification. This keeps prompts small, avoids LLM timeouts and
+allows failed scenes to be regenerated independently.
 
 Author : AIStudio
 """
@@ -30,6 +30,9 @@ LOGGER = logging.getLogger("VisualPlannerAgent")
 
 
 class VisualPlannerAgent:
+    """
+    Generates the complete visual production plan.
+    """
 
     def __init__(self) -> None:
 
@@ -45,7 +48,7 @@ class VisualPlannerAgent:
         storyboard_scene: dict,
     ) -> VisualSceneResponse:
         """
-        Generate one visual asset.
+        Generate one visual production specification.
         """
 
         prompt = json.dumps(
@@ -63,9 +66,12 @@ class VisualPlannerAgent:
 
         LOGGER.info(
 
-            "Generating visual asset for storyboard scene %s",
+            "Generating visual plan for storyboard scene %s",
 
-            storyboard_scene["scene"],
+            storyboard_scene.get(
+                "scene_number",
+                "?",
+            ),
 
         )
 
@@ -102,12 +108,14 @@ class VisualPlannerAgent:
             "Starting Visual Planner Agent"
         )
 
-        production_brief = state.production_brief.model_dump()
+        production_brief = (
+            state.production_brief.model_dump()
+        )
 
         visual_plan = VisualData()
 
         #
-        # Generate one visual asset per storyboard scene
+        # Generate one visual specification per storyboard scene
         #
 
         for storyboard_scene in state.storyboard.scenes:
@@ -120,8 +128,8 @@ class VisualPlannerAgent:
 
             )
 
-            visual_plan.assets.append(
-                response.asset
+            visual_plan.scenes.append(
+                response.scene
             )
 
         state.visuals = visual_plan

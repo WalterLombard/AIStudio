@@ -49,6 +49,12 @@ from .visuals import (
     VisualSceneResponse,
 )
 
+from .shot import (
+    ShotSpecification,
+    ShotData,
+    ShotSceneResponse,
+)
+
 from .images import (
     ImageAsset,
     ImageData,
@@ -133,6 +139,10 @@ __all__ = [
     "VisualAsset",
     "VisualData",
     "VisualSceneResponse",
+
+    "ShotSpecification",
+    "ShotData",
+    "ShotSceneResponse",
 
     "ImageAsset",
     "ImageData",

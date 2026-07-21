@@ -23,6 +23,7 @@ from agents.outline import OutlineAgent
 from agents.script_writer import ScriptWriterAgent
 from agents.storyboard import StoryboardAgent
 from agents.visual_planner import VisualPlannerAgent
+from agents.shot_planner import ShotPlannerAgent
 from agents.image_generator import ImageGeneratorAgent
 from agents.motion_designer import MotionDesignerAgent
 from agents.narration_designer import NarrationDesignerAgent
@@ -54,6 +55,11 @@ class PipelineRunner:
         self.storyboard = StoryboardAgent()
 
         self.visual_planner = VisualPlannerAgent()
+
+        #
+        # NEW
+        #
+        self.shot_planner = ShotPlannerAgent()
 
         self.image_generator = ImageGeneratorAgent()
 
@@ -104,6 +110,13 @@ class PipelineRunner:
         )
 
         state = self.visual_planner.run(
+            state
+        )
+
+        #
+        # NEW STAGE
+        #
+        state = self.shot_planner.run(
             state
         )
 

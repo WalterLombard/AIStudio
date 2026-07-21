@@ -1,9 +1,9 @@
 """
 AIStudio Image Generator Agent
 
-Generates one image at a time from the Visual Plan.
+Generates one image at a time from the Shot Plan.
 
-Each visual asset is processed independently which keeps prompts
+Each shot is processed independently which keeps prompts
 small, allows retries and avoids losing progress.
 
 Author : AIStudio
@@ -29,6 +29,9 @@ LOGGER = logging.getLogger("ImageGeneratorAgent")
 
 
 class ImageGeneratorAgent:
+    """
+    Generates one image for every planned shot.
+    """
 
     def __init__(self) -> None:
 
@@ -41,17 +44,17 @@ class ImageGeneratorAgent:
     def _generate_image(
         self,
         production_brief: dict,
-        visual_asset: dict,
+        shot: dict,
     ) -> ImageSceneResponse:
         """
-        Generate one image.
+        Generate one image prompt.
         """
 
         prompt = json.dumps(
 
             {
                 "production_brief": production_brief,
-                "visual_asset": visual_asset,
+                "shot": shot,
             },
 
             indent=4,
@@ -62,9 +65,17 @@ class ImageGeneratorAgent:
 
         LOGGER.info(
 
-            "Generating image %s",
+            "Generating image for scene %s shot %s",
 
-            visual_asset["asset_id"],
+            shot.get(
+                "scene_id",
+                "?",
+            ),
+
+            shot.get(
+                "shot_number",
+                "?",
+            ),
 
         )
 
@@ -91,31 +102,33 @@ class ImageGeneratorAgent:
                 "ProductionBrief must exist before ImageGeneratorAgent runs."
             )
 
-        if state.visuals is None:
+        if state.shots is None:
 
             raise ValueError(
-                "VisualData must exist before ImageGeneratorAgent runs."
+                "ShotData must exist before ImageGeneratorAgent runs."
             )
 
         LOGGER.info(
             "Starting Image Generator Agent"
         )
 
-        production_brief = state.production_brief.model_dump()
+        production_brief = (
+            state.production_brief.model_dump()
+        )
 
         images = ImageData()
 
         #
-        # Generate one image at a time
+        # Generate one image per shot
         #
 
-        for visual_asset in state.visuals.assets:
+        for shot in state.shots.shots:
 
             response = self._generate_image(
 
                 production_brief=production_brief,
 
-                visual_asset=visual_asset.model_dump(),
+                shot=shot.model_dump(),
 
             )
 
