@@ -1,12 +1,11 @@
 """
 AIStudio Script Writer Agent
 
-Generates the complete documentary narration from the approved
-Production Brief, Research package and Outline.
+Generates the documentary script one scene at a time.
 
-The Script Writer is responsible for transforming the documentary
-structure into natural narration suitable for voice synthesis while
-maintaining pacing, viewer engagement and cinematic storytelling.
+Each scene is generated independently to keep prompts small,
+avoid LLM timeouts and allow failed scenes to be regenerated
+without rerunning the entire script.
 
 Author : AIStudio
 """
@@ -19,6 +18,7 @@ import logging
 from shared.models import (
     ProjectState,
     ScriptData,
+    ScriptSceneResponse,
 )
 
 from shared.services import (
@@ -30,19 +30,6 @@ LOGGER = logging.getLogger("ScriptWriterAgent")
 
 
 class ScriptWriterAgent:
-    """
-    Produces the complete documentary narration.
-
-    Input
-    -----
-    ProductionBrief
-    ResearchData
-    OutlineData
-
-    Output
-    ------
-    ScriptData
-    """
 
     def __init__(self) -> None:
 
@@ -52,37 +39,55 @@ class ScriptWriterAgent:
             __file__,
         )
 
+    def _generate_scene(
+        self,
+        production_brief: dict,
+        research: dict,
+        outline_scene: dict,
+    ) -> ScriptSceneResponse:
+        """
+        Generate one script scene.
+        """
+
+        prompt = json.dumps(
+            {
+                "production_brief": production_brief,
+                "research": research,
+                "outline_scene": outline_scene,
+            },
+            indent=4,
+            ensure_ascii=False,
+        )
+
+        LOGGER.info(
+            "Generating script scene %s",
+            outline_scene["scene"],
+        )
+
+        result = self.llm.generate_json(
+            system=self.system_prompt,
+            prompt=prompt,
+            temperature=0.25,
+        )
+
+        return ScriptSceneResponse(**result)
+
     def run(
         self,
         state: ProjectState,
     ) -> ProjectState:
-        """
-        Generate the documentary narration.
-
-        Parameters
-        ----------
-        state
-            Current project state.
-
-        Returns
-        -------
-        Updated ProjectState
-        """
 
         if state.production_brief is None:
-
             raise ValueError(
                 "ProductionBrief must exist before ScriptWriterAgent runs."
             )
 
         if state.research is None:
-
             raise ValueError(
                 "ResearchData must exist before ScriptWriterAgent runs."
             )
 
         if state.outline is None:
-
             raise ValueError(
                 "OutlineData must exist before ScriptWriterAgent runs."
             )
@@ -91,36 +96,31 @@ class ScriptWriterAgent:
             "Starting Script Writer Agent"
         )
 
-        prompt = json.dumps(
+        production_brief = state.production_brief.model_dump()
 
-            {
-                "production_brief":
-                    state.production_brief.model_dump(),
+        research = state.research.model_dump()
 
-                "research":
-                    state.research.model_dump(),
+        script = ScriptData()
 
-                "outline":
-                    state.outline.model_dump(),
-            },
+        #
+        # Generate one scene at a time
+        #
 
-            indent=4,
+        for outline_scene in state.outline.scenes:
 
-            ensure_ascii=False,
+            response = self._generate_scene(
 
-        )
+                production_brief=production_brief,
 
-        result = self.llm.generate_json(
+                research=research,
 
-            system=self.system_prompt,
+                outline_scene=outline_scene.model_dump(),
 
-            prompt=prompt,
+            )
 
-            temperature=0.25,
-
-        )
-
-        script = ScriptData(**result)
+            script.scenes.append(
+                response.scene
+            )
 
         state.script = script
 

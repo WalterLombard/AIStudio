@@ -1,7 +1,18 @@
+"""
+AIStudio Outline Models
+
+Defines the documentary outline structure.
+
+Author : AIStudio
+"""
+
 from pydantic import BaseModel, Field
 
 
 class OutlineScene(BaseModel):
+    """
+    Represents a single documentary scene within the outline.
+    """
 
     scene: int
 
@@ -21,6 +32,9 @@ class OutlineScene(BaseModel):
 
 
 class OutlineData(BaseModel):
+    """
+    Complete documentary outline.
+    """
 
     title: str = ""
 
@@ -29,3 +43,11 @@ class OutlineData(BaseModel):
     total_duration: int = 0
 
     scenes: list[OutlineScene] = Field(default_factory=list)
+
+
+class OutlineSceneResponse(BaseModel):
+    """
+    Returned by the LLM when generating ONE outline scene.
+    """
+
+    scene: OutlineScene

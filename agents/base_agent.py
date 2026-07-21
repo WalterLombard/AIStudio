@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
 from time import perf_counter
 
 from shared.logger import get_logger
@@ -44,7 +43,9 @@ class BaseAgent(ABC):
 
         except Exception as ex:
 
-            self.logger.exception(ex)
+            self.logger.exception(
+                 f"{self.name} failed."
+        )
 
             raise
 

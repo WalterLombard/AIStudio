@@ -102,15 +102,6 @@ class ResearchAgent:
     ) -> ProjectState:
         """
         Build the complete ResearchData object.
-
-        Parameters
-        ----------
-        state
-            Current project state.
-
-        Returns
-        -------
-        Updated ProjectState
         """
 
         if state.production_brief is None:
@@ -289,7 +280,9 @@ class ResearchAgent:
             [],
         )
 
-        research.completed = True
+        #
+        # Save into pipeline state
+        #
 
         state.research = research
 

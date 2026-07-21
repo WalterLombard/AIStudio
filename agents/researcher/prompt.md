@@ -65,16 +65,30 @@ TASK: misconceptions
 Return ONLY:
 
 {
-    "misconceptions": []
+    "misconceptions": [
+        {
+            "myth": "",
+            "reality": ""
+        }
+    ]
 }
 
-Each misconception should be a single string in the format:
-
-"Myth: ... Reality: ..."
+Each misconception must be returned as an object.
 
 Example:
 
-"Myth: Sharks hunt humans. Reality: Most attacks are cases of mistaken identity."
+{
+    "misconceptions": [
+        {
+            "myth": "Sharks hunt humans.",
+            "reality": "Most attacks are cases of mistaken identity."
+        },
+        {
+            "myth": "Megalodon still exists today.",
+            "reality": "Scientific evidence shows Megalodon became extinct approximately 3.6 million years ago."
+        }
+    ]
+}
 
 =========================================================
 TASK: production

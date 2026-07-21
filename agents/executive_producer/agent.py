@@ -24,16 +24,6 @@ from shared.services import (
 class ExecutiveProducer:
     """
     Generates the initial Production Brief.
-
-    Responsibilities
-    ----------------
-    - Read the user's request
-    - Generate the Production Brief
-    - Initialise the ProjectState
-    - Populate the project metadata
-
-    This agent does NOT perform research, outlining,
-    scripting or storyboarding.
     """
 
     def __init__(self) -> None:
@@ -65,22 +55,26 @@ class ExecutiveProducer:
 
         brief = ProductionBrief(**result)
 
+        #
+        # Store the production brief
+        #
+
         state.production_brief = brief
 
         #
-        # Initialise project metadata
+        # Populate project metadata
         #
 
-        state.project_info.title = brief.title
+        state.project_info.project_name = brief.title
 
         state.project_info.topic = brief.topic
 
-        state.project_info.duration_minutes = (
-            brief.duration_minutes
-        )
+        #
+        # Update pipeline state
+        #
 
         state.current_stage = "production_brief"
 
-        state.status = "completed"
+        state.status = "production_brief_complete"
 
         return state

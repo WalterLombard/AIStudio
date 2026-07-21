@@ -9,7 +9,6 @@ Author : AIStudio
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from uuid import uuid4
 
@@ -22,6 +21,9 @@ from shared.models import (
 
 
 class AudioMixerService:
+    """
+    High-level audio mixing service.
+    """
 
     def __init__(self) -> None:
 
@@ -33,29 +35,22 @@ class AudioMixerService:
         )
 
     def mix(
-
         self,
-
         narration: AudioData,
-
         music: MusicLibrary,
-
         sfx: SFXLibrary,
-
     ) -> MasterAudioData:
+        """
+        Produce the final mastered audio track.
+
+        FFmpeg integration will be implemented later.
+        """
 
         output_file = self.output / f"{uuid4()}.wav"
 
         output_file.touch()
 
-        #
-        # FFmpeg mixing will be implemented here.
-        #
-
         return MasterAudioData(
-
             filename=str(output_file),
-
             duration=0.0,
-
         )

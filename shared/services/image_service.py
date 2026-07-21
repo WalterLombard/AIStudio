@@ -1,24 +1,26 @@
 """
 AIStudio Image Service
 
-Provides a unified interface for generating images regardless of the
-underlying provider.
+High-level interface used by the Image Generator Agent.
 
-The Image Generator Agent never communicates directly with ComfyUI,
-Flux, SDXL or OpenAI. It always calls this service.
+This service owns the image-generation workflow.
+
+Provider implementations (ComfyUI, Flux, SDXL, OpenAI, etc.) are
+introduced later. Until then this service defines the public API that
+the rest of AIStudio depends upon.
 
 Author : AIStudio
 """
 
 from __future__ import annotations
 
+import logging
+
 from shared.models import (
     VisualAsset,
 )
 
-from shared.providers.image_provider import (
-    ImageProvider,
-)
+LOGGER = logging.getLogger("ImageService")
 
 
 class ImageService:
@@ -28,14 +30,19 @@ class ImageService:
 
     def __init__(self) -> None:
 
-        self.provider = ImageProvider()
+        LOGGER.info(
+            "ImageService initialized."
+        )
 
     def generate_image(
         self,
         asset: VisualAsset,
     ) -> VisualAsset:
         """
-        Generate one image from a VisualAsset.
+        Generate one image.
+
+        This functionality will be implemented once the provider layer
+        is introduced.
 
         Parameters
         ----------
@@ -44,7 +51,9 @@ class ImageService:
 
         Returns
         -------
-        Updated VisualAsset
+        VisualAsset
         """
 
-        return self.provider.generate(asset)
+        raise NotImplementedError(
+            "Image generation provider has not yet been implemented."
+        )

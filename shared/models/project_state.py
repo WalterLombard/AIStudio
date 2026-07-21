@@ -30,7 +30,7 @@ from .qa import QAReport
 
 class ProjectState(BaseModel):
 
-    project: ProjectInfo = ProjectInfo()
+    project_info: ProjectInfo = ProjectInfo()
 
     production_brief: ProductionBrief | None = None
 

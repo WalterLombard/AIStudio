@@ -33,3 +33,12 @@ class StoryboardScene(BaseModel):
 
 class StoryboardData(BaseModel):
     scenes: list[StoryboardScene] = Field(default_factory=list)
+
+
+#
+# NEW
+# Returned from ONE LLM call.
+#
+
+class StoryboardSceneResponse(BaseModel):
+    scene: StoryboardScene

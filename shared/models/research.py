@@ -1,12 +1,28 @@
+"""
+AIStudio Research Models
+
+Defines all research information gathered for the documentary.
+
+Author : AIStudio
+"""
+
 from pydantic import BaseModel, Field
 
 
 class Misconception(BaseModel):
+    """
+    A common misconception and its factual correction.
+    """
+
     myth: str
+
     reality: str
 
 
 class ResearchData(BaseModel):
+    """
+    Complete research package used by downstream agents.
+    """
 
     executive_summary: str = ""
 

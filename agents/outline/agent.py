@@ -1,11 +1,11 @@
 """
 AIStudio Outline Agent
 
-Creates the complete documentary structure from the Production Brief
-and Research package.
+Generates the documentary outline one scene at a time.
 
-The Outline is the blueprint for the Script Writer and determines
-the pacing, narrative flow, emotional progression and viewer retention.
+Each scene is generated independently to keep prompts small,
+avoid LLM timeouts and allow failed scenes to be regenerated
+without rerunning the entire outline.
 
 Author : AIStudio
 """
@@ -17,6 +17,7 @@ import logging
 
 from shared.models import (
     OutlineData,
+    OutlineSceneResponse,
     ProjectState,
 )
 
@@ -29,18 +30,6 @@ LOGGER = logging.getLogger("OutlineAgent")
 
 
 class OutlineAgent:
-    """
-    Produces the documentary outline.
-
-    Input
-    -----
-    ProductionBrief
-    ResearchData
-
-    Output
-    ------
-    OutlineData
-    """
 
     def __init__(self) -> None:
 
@@ -50,22 +39,55 @@ class OutlineAgent:
             __file__,
         )
 
+    def _generate_scene(
+        self,
+        production_brief: dict,
+        research: dict,
+        scene_number: int,
+        total_scenes: int,
+        scene_duration: int,
+    ) -> OutlineSceneResponse:
+        """
+        Generate one outline scene.
+        """
+
+        prompt = json.dumps(
+
+            {
+                "production_brief": production_brief,
+                "research": research,
+                "scene_number": scene_number,
+                "total_scenes": total_scenes,
+                "scene_duration": scene_duration,
+            },
+
+            indent=4,
+
+            ensure_ascii=False,
+
+        )
+
+        LOGGER.info(
+            "Generating outline scene %s",
+            scene_number,
+        )
+
+        result = self.llm.generate_json(
+
+            system=self.system_prompt,
+
+            prompt=prompt,
+
+            temperature=0.20,
+
+        )
+
+        return OutlineSceneResponse(**result)
+
     def run(
         self,
         state: ProjectState,
     ) -> ProjectState:
-        """
-        Generate the documentary outline.
-
-        Parameters
-        ----------
-        state
-            Current project state.
-
-        Returns
-        -------
-        Updated ProjectState
-        """
 
         if state.production_brief is None:
 
@@ -83,33 +105,56 @@ class OutlineAgent:
             "Starting Outline Agent"
         )
 
-        prompt = json.dumps(
+        production_brief = state.production_brief.model_dump()
 
-            {
-                "production_brief":
-                    state.production_brief.model_dump(),
+        research = state.research.model_dump()
 
-                "research":
-                    state.research.model_dump(),
-            },
+        total_duration = (
+            state.production_brief.duration_minutes * 60
+        )
 
-            indent=4,
+        #
+        # Initial implementation:
+        # Fixed scene count.
+        #
 
-            ensure_ascii=False,
+        total_scenes = 10
+
+        scene_duration = total_duration // total_scenes
+
+        outline = OutlineData(
+
+            title=state.production_brief.title,
+
+            scene_count=total_scenes,
+
+            total_duration=total_duration,
 
         )
 
-        result = self.llm.generate_json(
+        #
+        # Generate one scene at a time
+        #
 
-            system=self.system_prompt,
+        for scene_number in range(1, total_scenes + 1):
 
-            prompt=prompt,
+            response = self._generate_scene(
 
-            temperature=0.2,
+                production_brief=production_brief,
 
-        )
+                research=research,
 
-        outline = OutlineData(**result)
+                scene_number=scene_number,
+
+                total_scenes=total_scenes,
+
+                scene_duration=scene_duration,
+
+            )
+
+            outline.scenes.append(
+                response.scene
+            )
 
         state.outline = outline
 
