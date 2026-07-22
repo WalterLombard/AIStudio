@@ -1,0 +1,28 @@
+[33md827db7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32malt-approach-1[m[33m, [m[1;31morigin/alt-approach-1[m[33m)[m Release 1.2.0 Alt approach V1.0.0
+[33m0d135f4[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Updated to main Release 1.2.0 "This will be the main from here on out any further changes will only be done in branches and if the work be committed to the main"
+[33mce9aab0[m Release 0.2.5 Shot PLanner and updates
+[33mf7fa76b[m Release 0.2.4 Agent Prompt updated
+[33m8f2df6c[m Update on Agent Release 0.2.3
+[33mf6f8b46[m Release 0.2.2 -Refractor Agents Scene by scene generation Complete
+[33mfd6f863[m Release 0.2.1 -Refractor Agents Scene by scene generation
+[33m83ee76d[m Release 0.2.2 - Introduce new model architecture
+[33m7c15a61[m Release 0.2.1 - Introduce new model architecture
+[33m8f4bca4[m Release 1.0.1 Architectural update and cleanup
+[33m9c8735f[m Release 1.0 Architectural update and cleanup
+[33m14d8d8a[m Release 0.2.4 - Registered Storyboard Agent
+[33m0ed2ab4[m Release 0.2.3 - Added Storyboard Agent Test
+[33m202bf0a[m Release 0.2.2 - Added Storyboard Agent
+[33m3be1427[m Release 0.2.1 - Added Storyboard Prompt
+[33m5746db3[m Release 0.1.11 - Modernized Script Writer Agent
+[33m33af402[m Release 0.1.10 - Improved Script Writer Prompt
+[33m562e8b4[m Release 0.1.9 - Improved Outline Prompt
+[33mc238c43[m Release 0.1.7 - Updated Outline Agent Test
+[33m4c0fb26[m Release 0.1.6 - Updated Research Agent Test
+[33m64a9e20[m Release 0.1.5 - Multi-stage Research Prompt
+[33m17ff16b[m Release 0.1.4 - Multi-stage Research Agent
+[33md1c6f14[m Release 0.1.6 - Updated Research Agent prompt
+[33m801e733[m Release 0.1.4 - Modernized Research Agent
+[33meeda960[m Release 0.1.3 - Redesigned Research Agent prompt
+[33me0fa378[m Release 0.1.2 - AIStudio  Expanded ResearchData modelds
+[33m62c2ce9[m Release 0.0.8 - AIStudio engineering standards
+[33m0fb4e28[m[33m ([m[1;33mtag: [m[1;33mv0.1.0[m[33m)[m Release 0.1.0 - Initial AI Studio planning pipeline
