@@ -1,7 +1,11 @@
 """
 AIStudio Sound Effects Models
 
-Defines sound effect planning and generated sound effect assets.
+Defines the planning models and generated sound effect assets used by the
+Sound Effects Generator.
+
+These models represent the complete lifecycle of documentary sound effects,
+from LLM planning through generated production assets.
 
 Produced by the SFX Generator.
 
@@ -15,10 +19,17 @@ from pydantic import BaseModel, Field
 
 class SFXCue(BaseModel):
     """
-    One sound effect cue.
+    Defines the planned sound effect for a single storyboard shot.
+
+    This model is produced by the LLM and represents the environmental
+    ambience required for one approved shot.
     """
 
     scene_id: str = ""
+
+    shot_number: int = 0
+
+    image_asset_id: str = ""
 
     start_time: float = 0.0
 
@@ -35,17 +46,17 @@ class SFXCue(BaseModel):
 
 class SFXData(BaseModel):
     """
-    Complete SFX plan.
+    Complete documentary sound effects plan.
+
+    Contains one sound effect cue for every approved shot.
     """
 
-    cues: list[SFXCue] = Field(
-        default_factory=list
-    )
+    cues: list[SFXCue] = Field(default_factory=list)
 
 
 class SFXSceneResponse(BaseModel):
     """
-    Returned by the LLM when generating ONE SFX cue.
+    Expected JSON response from the LLM for a single storyboard shot.
     """
 
     cue: SFXCue
@@ -53,23 +64,35 @@ class SFXSceneResponse(BaseModel):
 
 class SFXAsset(BaseModel):
     """
-    One generated sound effect.
+    Represents one generated sound effect asset.
+
+    This model references the generated production asset after it has been
+    created by the SFXService and registered with the AssetService.
     """
 
     asset_id: str = ""
 
     scene_id: str = ""
 
+    shot_number: int = 0
+
+    image_asset_id: str = ""
+
+    provider: str = ""
+
     filename: str = ""
 
     duration: float = 0.0
 
+    metadata: dict[str, object] = Field(default_factory=dict)
+
 
 class SFXLibrary(BaseModel):
     """
-    Generated sound effects.
+    Collection of all generated documentary sound effects.
+
+    This object is stored within ProjectState after the Sound Effects
+    Generator completes successfully.
     """
 
-    assets: list[SFXAsset] = Field(
-        default_factory=list
-    )
+    assets: list[SFXAsset] = Field(default_factory=list)

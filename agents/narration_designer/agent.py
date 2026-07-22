@@ -1,11 +1,11 @@
 """
 AIStudio Narration Designer Agent
 
-Generates the narration performance one scene at a time.
+Generates the narration performance one shot at a time.
 
-Each script scene is converted independently which keeps prompts
-small, avoids LLM timeouts and allows regeneration of individual
-segments.
+Each approved Shot Specification receives its own narration
+performance instructions. This keeps prompts small, avoids LLM
+timeouts and allows individual shots to be regenerated.
 
 Author : AIStudio
 """
@@ -39,22 +39,22 @@ class NarrationDesignerAgent:
             __file__,
         )
 
-    def _generate_scene(
+    def _generate_segment(
         self,
-        script_scene: dict,
+        shot: dict,
         motion_scene: dict,
     ) -> NarrationSceneResponse:
         """
-        Generate one narration segment.
+        Generate narration performance for one shot.
         """
 
         prompt = json.dumps(
 
             {
 
-                "script_scene": script_scene,
+                "shot": shot,
 
-                "motion_scene": motion_scene,
+                "motion": motion_scene,
 
             },
 
@@ -66,9 +66,9 @@ class NarrationDesignerAgent:
 
         LOGGER.info(
 
-            "Generating narration for scene %s",
+            "Generating narration for shot %s",
 
-            script_scene["scene"],
+            shot["shot_number"],
 
         )
 
@@ -89,23 +89,23 @@ class NarrationDesignerAgent:
         state: ProjectState,
     ) -> ProjectState:
 
-        if state.script is None:
+        if state.shots is None:
 
             raise ValueError(
-                "ProjectState does not contain ScriptData."
+                "ShotData must exist before NarrationDesignerAgent runs."
             )
 
         if state.motion is None:
 
             raise ValueError(
-                "ProjectState does not contain MotionData."
+                "MotionData must exist before NarrationDesignerAgent runs."
             )
 
         narration = NarrationData()
 
-        for script_scene, motion_scene in zip(
+        for shot, motion_scene in zip(
 
-            state.script.scenes,
+            state.shots.shots,
 
             state.motion.scenes,
 
@@ -113,9 +113,9 @@ class NarrationDesignerAgent:
 
         ):
 
-            response = self._generate_scene(
+            response = self._generate_segment(
 
-                script_scene.model_dump(),
+                shot.model_dump(),
 
                 motion_scene.model_dump(),
 

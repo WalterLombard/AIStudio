@@ -15,10 +15,14 @@ from pydantic import BaseModel, Field
 
 class MusicCue(BaseModel):
     """
-    One music cue.
+    One music cue for one storyboard shot.
     """
 
     scene_id: str = ""
+
+    shot_number: int = 0
+
+    image_asset_id: str = ""
 
     start_time: float = 0.0
 
@@ -57,6 +61,10 @@ class MusicAsset(BaseModel):
     asset_id: str = ""
 
     scene_id: str = ""
+
+    shot_number: int = 0
+
+    image_asset_id: str = ""
 
     filename: str = ""
 

@@ -1,179 +1,94 @@
 # AIStudio Coding Standards
 
-Version: 1.0
+**Version:** 2.0
+**Status:** Active Standard
+**Applies To:** Entire AIStudio Codebase
 
 ---
 
-# Purpose
+# 1. Purpose
 
-This document defines the coding standards for the AIStudio project.
+This document defines the mandatory coding standards for AIStudio.
 
-These standards are mandatory.
+These standards ensure the codebase remains:
 
-Every Python file, prompt, service, model and agent must follow these conventions.
+* Consistent
+* Readable
+* Maintainable
+* Testable
+* Enterprise quality
 
-The goal is to ensure the codebase remains:
+Every source file should appear as though it was written by the same developer.
 
-- Consistent
-- Readable
-- Maintainable
-- Testable
-- Production quality
+This document defines **how code is written**.
 
-Every file should appear as though it was written by the same developer.
+System architecture is defined in **AISTUDIO_ARCHITECTURE.md**.
+
+Agent implementation is defined in **AGENT_STANDARD.md**.
 
 ---
 
-# Philosophy
+# 2. Guiding Principles
 
-The project follows five principles.
+Every implementation must follow these principles.
 
 1. Simplicity
 2. Readability
-3. Single Responsibility
-4. Predictability
+3. Predictability
+4. Single Responsibility
 5. Explicit over Implicit
+6. Maintainability over Cleverness
+7. Consistency over Personal Preference
 
-If there are two possible implementations, choose the one that is easier to understand six months from now.
+If two implementations solve the same problem, choose the one that is easiest to understand six months later.
 
 ---
 
-# Project Architecture
+# 3. Python Version
 
-AIStudio is divided into clearly separated layers.
+Minimum supported version:
 
-```
-GUI
-
-↓
-
-Orchestrator
-
-↓
-
-Agents
-
-↓
-
-Shared Services
-
-↓
-
-Servers
-
-↓
-
-AI Models
+```text
+Python 3.13+
 ```
 
-No layer may bypass another layer.
+All code must be compatible with the project's supported Python version.
 
 ---
 
-# Directory Responsibilities
+# 4. Formatting
 
-## agents/
+The following tools are mandatory.
 
-Contains AI agents.
+* Black
+* isort
+* Ruff
 
-Each agent owns exactly one responsibility.
-
-Examples
-
-- Executive Producer
-- Research Agent
-- Outline Agent
-- Script Writer
-
-Agents never communicate directly with each other.
-
-The orchestrator coordinates them.
+No manual formatting.
 
 ---
 
-## shared/services/
+# 5. Line Length
 
-Contains reusable business logic.
+Maximum line length:
 
-Examples
+```text
+88 characters
+```
 
-- LLMService
-- PromptService
-- MemoryService
-- CacheService
-- AssetService
-
-Services contain reusable code.
-
-Agents consume services.
+Long function signatures may span multiple lines for readability.
 
 ---
 
-## shared/models/
+# 6. Imports
 
-Contains only Pydantic models.
+Imports are grouped in the following order:
 
-No business logic.
+1. Standard Library
+2. Third-party Libraries
+3. Project Imports
 
-No API calls.
-
-No filesystem operations.
-
-Only data.
-
----
-
-## orchestrator/
-
-Coordinates workflow.
-
-Never contains AI prompts.
-
-Never contains business logic.
-
----
-
-## servers/
-
-Interfaces with external engines.
-
-Examples
-
-Video Server
-
-Audio Server
-
-Compiler Server
-
----
-
-## config/
-
-Configuration only.
-
-No code.
-
----
-
-## prompts/
-
-Prompt templates only.
-
----
-
-## tests/
-
-Unit tests.
-
-One test file per component.
-
----
-
-# Imports
-
-Always group imports.
-
-Example
+Example:
 
 ```python
 from __future__ import annotations
@@ -183,160 +98,76 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from shared.services.llm_service import LLMService
+from shared.services import LLMService
 ```
 
-Import order
-
-1 Standard Library
-
-2 Third-party Libraries
-
-3 Project Imports
+Wildcard imports are prohibited.
 
 ---
 
-# Line Length
+# 7. Naming Conventions
 
-Maximum
-
-88 characters
-
-Use Black formatting.
-
----
-
-# Blank Lines
-
-Use one blank line between logical blocks.
-
-Use two blank lines between classes.
-
-Example
-
-```python
-class FirstClass:
-    ...
-
-
-class SecondClass:
-    ...
-```
-
----
-
-# Comments
-
-Only write comments when they explain WHY.
-
-Never explain WHAT obvious code is doing.
-
-Good
-
-```python
-# Retry because Ollama occasionally truncates long JSON.
-```
-
-Bad
-
-```python
-# Increment counter.
-counter += 1
-```
-
----
-
-# File Headers
-
-Every file starts with
-
-```python
-from __future__ import annotations
-```
-
-No copyright headers.
-
-No author headers.
-
-Git tracks history.
-
----
-
-# Class Naming
+## Classes
 
 PascalCase
 
 Example
 
-```python
-ExecutiveProducer
-
-ResearchAgent
-
-OutlineData
-
-ProjectManager
+```text
+ProjectState
+MotionDesignerAgent
+ImageData
 ```
 
 ---
 
-# Function Naming
+## Functions
 
 snake_case
 
 Example
 
-```python
-generate_outline()
-
-save_project()
-
+```text
+generate_script()
 load_prompt()
+register_asset()
 ```
 
 ---
 
-# Variable Naming
+## Variables
 
 snake_case
 
-Good
+Example
 
-```python
+```text
 project_state
-
-scene_count
-
-production_brief
-```
-
-Bad
-
-```python
-projectState
-
-SceneCount
-
-pb
+scene_id
+shot_number
 ```
 
 ---
 
-# Constants
+## Constants
 
 UPPER_CASE
 
 Example
 
-```python
-DEFAULT_TIMEOUT = 60
+```text
+DEFAULT_TIMEOUT
+MAX_RETRIES
 ```
 
 ---
 
-# Type Hints
+# 8. Type Hints
 
-Every function must include type hints.
+Every public function must define:
+
+* Parameter types
+* Return type
 
 Example
 
@@ -347,117 +178,133 @@ def run(
 ) -> ProjectState:
 ```
 
-Never omit return types.
+Return types must never be omitted.
 
 ---
 
-# Pydantic Models
+# 9. Pydantic Models
 
-Every shared data structure is a Pydantic model.
+All shared data structures are Pydantic models.
 
-Never use raw dictionaries internally.
+Rules:
 
-Bad
+* No business logic
+* No API calls
+* No filesystem access
+* No networking
+
+Models represent data only.
+
+Mutable defaults must use:
 
 ```python
-project["title"]
+Field(default_factory=list)
 ```
 
-Good
+or
 
 ```python
-project.title
+Field(default_factory=dict)
 ```
 
 ---
 
-# JSON
+# 10. JSON Handling
 
 JSON exists only at system boundaries.
 
-Example
+Examples:
 
-LLM
-
-Disk
-
-REST API
+* LLM responses
+* REST APIs
+* Disk storage
 
 Immediately convert JSON into Pydantic models.
 
-Never pass dictionaries through the application.
+Raw dictionaries must never propagate through the application.
 
 ---
 
-# Services
+# 11. File Headers
 
-Services should never know about agents.
+Every Python file begins with:
 
-Agents consume services.
-
-Never the reverse.
-
----
-
-# Agents
-
-Every agent contains
-
-```
-agent.py
-
-prompt.md
-
-__init__.py
+```python
+from __future__ import annotations
 ```
 
-Nothing else.
+Module docstrings should describe:
+
+* Purpose
+* Responsibility
+
+Do not include copyright headers.
+
+Git maintains history.
 
 ---
 
-# Prompt Files
+# 12. Comments
 
-Prompt files are Markdown.
-
-Never embed prompts inside Python.
+Comments explain **why**, not **what**.
 
 Good
 
-```
-prompt.md
+```python
+# Retry because the provider occasionally truncates JSON responses.
 ```
 
 Bad
 
 ```python
-prompt = """
-...
-"""
+# Increment counter.
+counter += 1
 ```
+
+Avoid excessive commenting.
+
+Readable code requires fewer comments.
 
 ---
 
-# Logging
+# 13. Docstrings
 
-Every service logs.
+Public classes require docstrings.
 
-Every agent logs.
+Public methods require docstrings where behaviour is not immediately obvious.
 
-Never use print() except inside tests.
+Avoid documenting trivial code.
 
-Example
+---
+
+# 14. Logging
+
+Logging must use the project's logging framework.
+
+Never use:
 
 ```python
-logger.info(...)
-
-logger.warning(...)
-
-logger.error(...)
+print()
 ```
+
+except inside tests or temporary debugging.
+
+Log:
+
+* Requests
+* Responses
+* Validation failures
+* Exceptions
+
+Never log:
+
+* Chain of thought
+* Sensitive information
+* Entire prompt payloads unless debugging is explicitly enabled
 
 ---
 
-# Exceptions
+# 15. Exceptions
 
 Raise meaningful exceptions.
 
@@ -471,214 +318,206 @@ Good
 
 ```python
 raise ValueError(
-    "ProductionBrief is missing."
+    "MotionData is required before MotionDesignerAgent runs."
 )
 ```
 
+Never swallow exceptions.
+
+Never use empty except blocks.
+
 ---
 
-# Testing
+# 16. Configuration
 
-Every component has a matching test.
+Configuration belongs in:
 
-Example
-
+```text
+config/
 ```
-agents/researcher/
 
-tests/test_research_agent.py
+Never hardcode:
+
+* URLs
+* Ports
+* API keys
+* Directory paths
+* Model names
+* Provider names
+* Timeouts
+
+Read configuration through the project's configuration system.
+
+---
+
+# 17. Dependencies
+
+Dependencies must follow the architecture.
+
+Allowed:
+
+```text
+Agent
+    ↓
+Service
+    ↓
+Server
 ```
 
-Never merge code without a passing test.
+Forbidden:
 
----
-
-# Formatting
-
-Black
-
-isort
-
-ruff
-
-No manual formatting.
-
----
-
-# Docstrings
-
-Use docstrings only for public classes or complex methods.
-
-Avoid documenting obvious code.
-
----
-
-# One Responsibility Rule
-
-Each file should have one responsibility.
-
-Examples
-
-Good
-
+```text
+Service
+    ↓
+Agent
 ```
+
+```text
+Server
+    ↓
+Agent
+```
+
+```text
+Agent
+    ↓
+Agent
+```
+
+---
+
+# 18. One Responsibility Rule
+
+Every file has one responsibility.
+
+Good examples:
+
+```text
 llm_service.py
-
 prompt_service.py
-
-memory_service.py
+asset_service.py
+motion.py
 ```
 
-Bad
+Bad examples:
 
-```
-utils.py
-
+```text
 helpers.py
-
+utils.py
 misc.py
 ```
 
 ---
 
-# Dependency Rules
+# 19. Testing
 
-Allowed
+Every component requires corresponding tests.
 
-Agent
+Examples:
 
-↓
-
-Service
-
-↓
-
-Server
-
-Not Allowed
-
-Service
-
-↓
-
-Agent
-
----
-
-# Configuration
-
-Never hardcode
-
-URLs
-
-Ports
-
-Model names
-
-Directories
-
-Read them from
-
-```
-config.yaml
+```text
+tests/test_motion_designer.py
+tests/test_prompt_service.py
+tests/test_project_state.py
 ```
 
----
+Testing must verify:
 
-# AI Responses
+* Model validation
+* Expected behaviour
+* Error handling
+* Service interaction
+* State updates
 
-Always validate AI output.
-
-Never trust raw LLM responses.
-
-Convert immediately into
-
-Pydantic models.
+No component is complete without tests.
 
 ---
 
-# Prompt Engineering
+# 20. Code Review Checklist
 
-Prompt files must
+Before committing code, verify:
 
-Define the role
-
-Define the task
-
-Define the input
-
-Define the output
-
-Specify JSON schema
-
-Specify constraints
-
-Specify failure conditions
-
-Never leave output ambiguous.
-
----
-
-# Future Components
-
-Every future component must fit this architecture.
-
-Examples
-
-Storyboard Agent
-
-Visual Director
-
-Image Critic
-
-Motion Director
-
-Audio Director
-
-QA Agent
-
-Publisher
-
-No component may violate the dependency rules.
+* Single responsibility
+* Correct folder placement
+* Uses shared services
+* Uses Pydantic models
+* Uses type hints
+* Uses logging
+* No duplicated logic
+* No hardcoded configuration
+* No wildcard imports
+* Black formatted
+* isort applied
+* Ruff clean
+* Tests passing
+* Documentation updated where required
 
 ---
 
-# Code Review Checklist
+# 21. Performance Guidelines
 
-Before committing code verify
+Optimise only after correctness.
 
-✓ One responsibility
+Prefer:
 
-✓ Correct folder
+* Clear code
+* Predictable behaviour
+* Deterministic execution
 
-✓ Uses services
+Avoid premature optimisation.
 
-✓ Uses Pydantic
+Measure performance before refactoring for speed.
 
-✓ Uses logging
+---
 
-✓ Uses type hints
+# 22. Security Guidelines
 
-✓ No duplicated logic
+Never commit:
 
-✓ No hardcoded paths
+* API keys
+* Passwords
+* Tokens
+* Secrets
 
-✓ No hardcoded models
+Validate all external input.
 
-✓ Tested
+Treat AI responses as untrusted until validated.
 
-✓ Black formatted
+Use least privilege when interacting with external services.
 
-✓ Imports sorted
+---
 
-✓ Prompt stored in prompt.md
+# 23. Maintainability
+
+Code should be understandable by a developer with no prior knowledge of the module.
+
+Avoid unnecessary abstraction.
+
+Avoid deeply nested logic.
+
+Prefer composition over duplication.
+
+Refactor duplicated code into shared services.
+
+---
+
+# 24. Definition of Done
+
+Code is considered complete only when:
+
+* It complies with AISTUDIO_ARCHITECTURE.md.
+* It complies with AGENT_STANDARD.md where applicable.
+* It follows every rule in this document.
+* All tests pass.
+* Documentation has been updated.
+* The implementation is readable, deterministic, and production-ready.
 
 ---
 
 # Golden Rule
 
-When writing new code ask:
+Before committing any code, ask:
 
-"Would this look like it has always been part of AIStudio?"
+> **"Would this file look like it has always belonged in AIStudio?"**
 
-If the answer is no, rewrite it.
+If the answer is **No**, refactor it until the answer is **Yes**.

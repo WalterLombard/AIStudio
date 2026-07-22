@@ -1,10 +1,11 @@
 """
 AIStudio Motion Designer Agent
 
-Generates the cinematic motion plan one image at a time.
+Generates the cinematic motion plan one shot at a time.
 
-Each generated image receives its own camera movement which keeps
-prompts small, avoids LLM timeouts and allows individual regeneration.
+Each approved Shot Specification receives its own camera movement.
+This keeps prompts small, avoids LLM timeouts and allows individual
+shots to be regenerated independently.
 
 Author : AIStudio
 """
@@ -41,20 +42,20 @@ class MotionDesignerAgent:
             __file__,
         )
 
-    def _generate_scene(
+    def _generate_motion(
         self,
-        storyboard_scene: dict,
+        shot: dict,
         image_asset: dict,
     ) -> MotionSceneResponse:
         """
-        Generate one camera move.
+        Generate motion for one approved shot.
         """
 
         prompt = json.dumps(
 
             {
 
-                "storyboard_scene": storyboard_scene,
+                "shot": shot,
 
                 "image_asset": image_asset,
 
@@ -68,9 +69,9 @@ class MotionDesignerAgent:
 
         LOGGER.info(
 
-            "Generating motion for %s",
+            "Generating motion for shot %s",
 
-            image_asset["asset_id"],
+            shot["shot_number"],
 
         )
 
@@ -91,10 +92,10 @@ class MotionDesignerAgent:
         state: ProjectState,
     ) -> ProjectState:
 
-        if state.storyboard is None:
+        if state.shots is None:
 
             raise ValueError(
-                "StoryboardData must exist before MotionDesignerAgent runs."
+                "ShotData must exist before MotionDesignerAgent runs."
             )
 
         motion = MotionData()
@@ -109,9 +110,9 @@ class MotionDesignerAgent:
 
         ]
 
-        for storyboard_scene, image_asset in zip(
+        for shot, image_asset in zip(
 
-            state.storyboard.scenes,
+            state.shots.shots,
 
             image_assets,
 
@@ -119,9 +120,9 @@ class MotionDesignerAgent:
 
         ):
 
-            response = self._generate_scene(
+            response = self._generate_motion(
 
-                storyboard_scene.model_dump(),
+                shot.model_dump(),
 
                 image_asset.model_dump(),
 

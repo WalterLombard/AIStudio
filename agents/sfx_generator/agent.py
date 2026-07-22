@@ -1,11 +1,11 @@
 """
 AIStudio Sound Effects Generator
 
-Generates documentary sound effects one scene at a time.
+Generates documentary sound effects one shot at a time.
 
-Each scene is planned independently to keep prompts small,
-avoid LLM timeouts and allow failed scenes to be regenerated
-without rerunning the entire sound effects plan.
+Each approved shot receives its own sound effects plan. This keeps
+prompts small, avoids LLM timeouts and allows regeneration of
+individual shots.
 
 After planning completes, the SFXService generates the
 actual sound effect assets.
@@ -35,6 +35,9 @@ from shared.services import (
 
 
 class SFXGeneratorAgent:
+    """
+    Generates documentary sound effects one shot at a time.
+    """
 
     def __init__(self) -> None:
 
@@ -48,24 +51,23 @@ class SFXGeneratorAgent:
             __file__,
         )
 
-    def _generate_scene(
+    def _generate_cue(
         self,
-        storyboard_scene: dict,
-        motion_scene: dict,
+        motion: dict,
+        narration: dict,
     ) -> SFXSceneResponse:
         """
-        Generate one sound effects cue.
+        Generate sound effects for one shot.
         """
 
         prompt = json.dumps(
 
             {
-                "storyboard_scene": storyboard_scene,
-                "motion_scene": motion_scene,
+                "motion": motion,
+                "narration": narration,
             },
 
             indent=4,
-
             ensure_ascii=False,
 
         )
@@ -90,34 +92,36 @@ class SFXGeneratorAgent:
         if state.motion is None:
 
             raise ValueError(
-                "ProjectState does not contain MotionData."
+                "MotionData must exist before SFXGeneratorAgent runs."
             )
 
-        if state.storyboard is None:
+        if state.narration is None:
 
             raise ValueError(
-                "ProjectState does not contain StoryboardData."
+                "NarrationData must exist before SFXGeneratorAgent runs."
             )
 
         plan = SFXData()
 
         #
-        # Generate one cue per scene
+        # Generate one cue per shot
         #
 
-        for storyboard_scene, motion_scene in zip(
-
-            state.storyboard.scenes,
+        for motion, narration in zip(
 
             state.motion.scenes,
 
+            state.narration.segments,
+
+            strict=False,
+
         ):
 
-            response = self._generate_scene(
+            response = self._generate_cue(
 
-                storyboard_scene=storyboard_scene.model_dump(),
+                motion=motion.model_dump(),
 
-                motion_scene=motion_scene.model_dump(),
+                narration=narration.model_dump(),
 
             )
 
@@ -151,7 +155,11 @@ class SFXGeneratorAgent:
 
                 duration=generated.duration,
 
-                metadata=generated.metadata,
+                metadata={
+                    **generated.metadata,
+                    "shot_number": cue.shot_number,
+                    "image_asset_id": cue.image_asset_id,
+                },
 
             )
 
@@ -166,6 +174,10 @@ class SFXGeneratorAgent:
                     asset_id=asset.asset_id,
 
                     scene_id=cue.scene_id,
+
+                    shot_number=cue.shot_number,
+
+                    image_asset_id=cue.image_asset_id,
 
                     filename=asset.filename,
 

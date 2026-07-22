@@ -1,14 +1,11 @@
 """
 AIStudio Music Generator Agent
 
-Generates the documentary music plan one scene at a time.
+Generates the documentary music plan one shot at a time.
 
-Each scene is planned independently to keep prompts small,
-avoid LLM timeouts and allow failed scenes to be regenerated
-without rerunning the entire music plan.
-
-After planning completes, the MusicService generates the
-actual music assets.
+Each approved shot receives its own music cue. This keeps prompts
+small, avoids LLM timeouts and allows regeneration of individual
+shots.
 
 Author : AIStudio
 """
@@ -48,10 +45,10 @@ class MusicGeneratorAgent:
             __file__,
         )
 
-    def _generate_scene(
+    def _generate_cue(
         self,
-        motion_scene: dict,
-        narration_scene: dict,
+        motion: dict,
+        narration: dict,
     ) -> MusicSceneResponse:
         """
         Generate one music cue.
@@ -60,8 +57,11 @@ class MusicGeneratorAgent:
         prompt = json.dumps(
 
             {
-                "motion_scene": motion_scene,
-                "narration_scene": narration_scene,
+
+                "motion": motion,
+
+                "narration": narration,
+
             },
 
             indent=4,
@@ -90,34 +90,36 @@ class MusicGeneratorAgent:
         if state.motion is None:
 
             raise ValueError(
-                "ProjectState does not contain MotionData."
+                "MotionData must exist before MusicGeneratorAgent runs."
             )
 
         if state.narration is None:
 
             raise ValueError(
-                "ProjectState does not contain NarrationData."
+                "NarrationData must exist before MusicGeneratorAgent runs."
             )
 
         music_plan = MusicData()
 
         #
-        # Generate one cue per scene
+        # Generate one cue per shot
         #
 
-        for motion_scene, narration_scene in zip(
+        for motion, narration in zip(
 
-            state.motion.scenes,
+            state.motion.moves,
 
-            state.narration.scenes,
+            state.narration.segments,
+
+            strict=False,
 
         ):
 
-            response = self._generate_scene(
+            response = self._generate_cue(
 
-                motion_scene=motion_scene.model_dump(),
+                motion.model_dump(),
 
-                narration_scene=narration_scene.model_dump(),
+                narration.model_dump(),
 
             )
 
