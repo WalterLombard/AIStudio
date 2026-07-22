@@ -14,31 +14,25 @@ Author : AIStudio
 
 from __future__ import annotations
 
-from shared.models import (
-    VisualAsset,
-)
+from shared.models.images import ImageAsset
 
 
 class ComfyUIProvider:
     """
-    ComfyUI image provider.
+    ComfyUI image provider contract.
     """
 
     def __init__(self) -> None:
-
         pass
 
     def generate(
         self,
-        asset: VisualAsset,
-    ) -> VisualAsset:
+        asset: ImageAsset,
+    ) -> ImageAsset:
         """
-        Generate an image.
+        Generate an image asset via ComfyUI.
 
-        Currently this is a placeholder implementation that preserves
-        the interface while the ComfyUI backend is developed.
+        Preserves contract interface while the ComfyUI backend is wired up.
         """
-
         asset.provider = "ComfyUI"
-
         return asset

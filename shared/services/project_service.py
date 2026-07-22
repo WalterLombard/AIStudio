@@ -19,9 +19,7 @@ class ProjectService:
     """
 
     def __init__(self) -> None:
-
         self.root = Path("projects")
-
         self.root.mkdir(
             parents=True,
             exist_ok=True,
@@ -32,38 +30,26 @@ class ProjectService:
         project_name: str,
     ) -> Path:
         """
-        Create a new AIStudio project.
+        Create a new AIStudio project structure.
         """
-
         project = self.root / project_name
-
         project.mkdir(
             parents=True,
             exist_ok=True,
         )
 
         folders = [
-
             "research",
-
             "script",
-
             "storyboard",
-
             "visuals",
-
             "audio",
-
             "video",
-
             "exports",
-
             "cache",
-
         ]
 
         for folder in folders:
-
             (project / folder).mkdir(
                 exist_ok=True,
             )
@@ -77,11 +63,9 @@ class ProjectService:
         data: Any,
     ) -> None:
         """
-        Save JSON data into the project.
+        Save JSON data into the project folder.
         """
-
         file = project / relative_path
-
         file.parent.mkdir(
             parents=True,
             exist_ok=True,
@@ -92,7 +76,6 @@ class ProjectService:
             "w",
             encoding="utf-8",
         ) as f:
-
             json.dump(
                 data,
                 f,
@@ -106,15 +89,16 @@ class ProjectService:
         relative_path: str,
     ) -> Any:
         """
-        Load JSON data from the project.
+        Load JSON data from the project folder.
         """
-
         file = project / relative_path
+
+        if not file.exists():
+            raise FileNotFoundError(f"Project asset not found: {file}")
 
         with open(
             file,
             "r",
             encoding="utf-8",
         ) as f:
-
             return json.load(f)

@@ -6,6 +6,8 @@ Defines generated image assets.
 Author : AIStudio
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 

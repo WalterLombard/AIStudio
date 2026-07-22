@@ -11,6 +11,7 @@ Author : AIStudio
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -24,7 +25,7 @@ class TTSResult(BaseModel):
 
     provider: str
 
-    metadata: dict
+    metadata: dict[str, Any]
 
 
 class TTSService:
@@ -44,13 +45,13 @@ class TTSService:
 
         text: str,
 
-        emotion: str,
+        emotion: str = "neutral",
 
-        speaking_rate: float,
+        speaking_rate: float = 1.0,
 
-        pause_before: float,
+        pause_before: float = 0.0,
 
-        pause_after: float,
+        pause_after: float = 0.0,
 
     ) -> TTSResult:
 

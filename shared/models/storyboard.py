@@ -1,8 +1,23 @@
+"""
+AIStudio Storyboard Models
+
+Defines the scene-by-scene storyboard structure.
+
+Author : AIStudio
+"""
+
+from __future__ import annotations
+
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
 class StoryboardShot(BaseModel):
-    shot_number: int
+    """
+    A single shot within a storyboard scene.
+    """
+
+    shot_number: int | str = 1
 
     shot_type: str = ""
 
@@ -24,7 +39,11 @@ class StoryboardShot(BaseModel):
 
 
 class StoryboardScene(BaseModel):
-    scene_number: int
+    """
+    A single scene composed of storyboard shots.
+    """
+
+    scene_number: int | str = 1
 
     title: str = ""
 
@@ -32,13 +51,18 @@ class StoryboardScene(BaseModel):
 
 
 class StoryboardData(BaseModel):
+    """
+    Complete project storyboard.
+    """
+
     scenes: list[StoryboardScene] = Field(default_factory=list)
 
 
-#
-# NEW
-# Returned from ONE LLM call.
-#
-
 class StoryboardSceneResponse(BaseModel):
-    scene: StoryboardScene
+    """
+    Returned by the LLM when generating storyboard scenes.
+    Supports both singular 'scene' and plural 'scenes' payloads.
+    """
+
+    scene: Optional[StoryboardScene] = None
+    scenes: list[StoryboardScene] = Field(default_factory=list)

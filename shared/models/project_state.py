@@ -8,7 +8,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .project import ProjectInfo
 from .production_brief import ProductionBrief
@@ -34,7 +34,7 @@ class ProjectState(BaseModel):
     Global project state shared by every AIStudio agent.
     """
 
-    project_info: ProjectInfo = ProjectInfo()
+    project_info: ProjectInfo = Field(default_factory=ProjectInfo)
 
     production_brief: ProductionBrief | None = None
 
@@ -48,10 +48,6 @@ class ProjectState(BaseModel):
 
     visuals: VisualData | None = None
 
-    #
-    # NEW
-    # Complete cinematic shot plan.
-    #
     shots: ShotData | None = None
 
     images: ImageData | None = None

@@ -1,14 +1,11 @@
 from pprint import pprint
 
 from agents.executive_producer.agent import ExecutiveProducerAgent
-from agents.researcher.agent import ResearchAgent
 from agents.outline.agent import OutlineAgent
-
+from agents.researcher.agent import ResearchAgent
 from shared.models import ProjectState
 
-
 state = ProjectState()
-
 state.project.topic = "Sharks"
 
 producer = ExecutiveProducerAgent()
@@ -25,7 +22,10 @@ print("=" * 80)
 print("OUTLINE")
 print("=" * 80)
 
-pprint(
-    state.outline.model_dump(),
-    sort_dicts=False,
-)
+if getattr(state, "outline", None):
+    pprint(
+        state.outline.model_dump(),
+        sort_dicts=False,
+    )
+else:
+    print("Outline stage produced no output.")

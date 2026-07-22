@@ -8,12 +8,14 @@ Author : AIStudio
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from pydantic import BaseModel
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field
 
 
 class ProjectInfo(BaseModel):
+    """
+    Core metadata for a project instance.
+    """
 
     project_name: str = ""
 
@@ -21,6 +23,10 @@ class ProjectInfo(BaseModel):
 
     topic: str = ""
 
-    created: datetime = datetime.now()
+    created: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
-    modified: datetime = datetime.now()
+    modified: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

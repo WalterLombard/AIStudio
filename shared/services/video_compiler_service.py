@@ -9,6 +9,7 @@ Author : AIStudio
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from shared.models import (
@@ -34,11 +35,11 @@ class VideoCompilerService:
 
         self,
 
-        images: ImageData,
+        images: ImageData | Any = None,
 
-        motion: MotionData,
+        motion: MotionData | Any = None,
 
-        audio: MasterAudioData,
+        audio: MasterAudioData | Any = None,
 
     ) -> VideoData:
 
@@ -46,15 +47,12 @@ class VideoCompilerService:
 
         output.touch()
 
-        #
-        # FFmpeg render implementation
-        # will be added here.
-        #
+        duration = getattr(audio, "duration", 0.0) if audio else 0.0
 
         return VideoData(
 
             filename=str(output),
 
-            duration=audio.duration,
+            duration=duration,
 
         )

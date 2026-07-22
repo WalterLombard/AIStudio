@@ -35,3 +35,5 @@ class AudioData(BaseModel):
     assets: list[AudioAsset] = Field(
         default_factory=list
     )
+
+    total_duration: float = 0.0

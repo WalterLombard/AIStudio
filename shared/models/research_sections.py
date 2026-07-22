@@ -9,21 +9,29 @@ final ResearchData object.
 Author : AIStudio
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 from .research import Misconception
 
 
 class BackgroundResponse(BaseModel):
+    """
+    Structured response model for high-level background research.
+    """
 
-    executive_summary: str
+    executive_summary: str = ""
 
-    historical_background: str
+    historical_background: str = ""
 
-    scientific_background: str
+    scientific_background: str = ""
 
 
 class FactsResponse(BaseModel):
+    """
+    Structured response model for hard facts and timeline metadata.
+    """
 
     facts: list[str] = Field(default_factory=list)
 
@@ -35,11 +43,17 @@ class FactsResponse(BaseModel):
 
 
 class MisconceptionsResponse(BaseModel):
+    """
+    Structured response model for identified common myths and corrections.
+    """
 
     misconceptions: list[Misconception] = Field(default_factory=list)
 
 
 class ProductionResponse(BaseModel):
+    """
+    Structured response model for visual direction and narrative opportunities.
+    """
 
     visual_opportunities: list[str] = Field(default_factory=list)
 
@@ -53,6 +67,9 @@ class ProductionResponse(BaseModel):
 
 
 class ReferencesResponse(BaseModel):
+    """
+    Structured response model for entity references and topics.
+    """
 
     important_people: list[str] = Field(default_factory=list)
 

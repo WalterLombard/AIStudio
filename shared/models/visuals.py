@@ -10,6 +10,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -66,7 +67,9 @@ class VisualData(BaseModel):
 
 class VisualSceneResponse(BaseModel):
     """
-    Returned by the LLM for ONE scene.
+    Returned by the LLM when generating visual plans.
+    Supports both singular 'scene' and plural 'scenes' payloads.
     """
 
-    scene: VisualAsset
+    scene: Optional[VisualAsset] = None
+    scenes: list[VisualAsset] = Field(default_factory=list)

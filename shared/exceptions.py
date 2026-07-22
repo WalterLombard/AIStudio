@@ -11,9 +11,7 @@ from __future__ import annotations
 
 
 class AIStudioError(Exception):
-    """
-    Base exception for AIStudio.
-    """
+    """Base exception for AIStudio."""
     pass
 
 
@@ -22,9 +20,7 @@ class AIStudioError(Exception):
 # ==========================================================
 
 class ConfigurationError(AIStudioError):
-    """
-    Raised when configuration is invalid or missing.
-    """
+    """Raised when configuration is invalid or missing."""
     pass
 
 
@@ -33,17 +29,12 @@ class ConfigurationError(AIStudioError):
 # ==========================================================
 
 class LLMError(AIStudioError):
-    """
-    Raised when an LLM request fails.
-    """
+    """Raised when an LLM request fails."""
     pass
 
 
 class LLMResponseError(LLMError):
-    """
-    Raised when the LLM returns invalid JSON or
-    an unexpected response.
-    """
+    """Raised when the LLM returns invalid JSON or an unexpected response."""
     pass
 
 
@@ -52,16 +43,12 @@ class LLMResponseError(LLMError):
 # ==========================================================
 
 class ProjectError(AIStudioError):
-    """
-    Raised when the project state is invalid.
-    """
+    """Raised when the project state is invalid."""
     pass
 
 
 class MissingProjectDataError(ProjectError):
-    """
-    Raised when required project data is missing.
-    """
+    """Raised when required project data is missing."""
     pass
 
 
@@ -70,16 +57,12 @@ class MissingProjectDataError(ProjectError):
 # ==========================================================
 
 class AgentError(AIStudioError):
-    """
-    Base exception for all AIStudio agents.
-    """
+    """Base exception for all AIStudio agents."""
     pass
 
 
 class AgentExecutionError(AgentError):
-    """
-    Raised when an agent fails during execution.
-    """
+    """Raised when an agent fails during execution."""
     pass
 
 
@@ -88,9 +71,7 @@ class AgentExecutionError(AgentError):
 # ==========================================================
 
 class ParserError(AIStudioError):
-    """
-    Raised when parsing fails.
-    """
+    """Raised when parsing fails."""
     pass
 
 
@@ -99,9 +80,7 @@ class ParserError(AIStudioError):
 # ==========================================================
 
 class AssetError(AIStudioError):
-    """
-    Raised when an asset cannot be created or loaded.
-    """
+    """Raised when an asset cannot be created or loaded."""
     pass
 
 
@@ -110,9 +89,7 @@ class AssetError(AIStudioError):
 # ==========================================================
 
 class VideoCompilationError(AIStudioError):
-    """
-    Raised when video compilation fails.
-    """
+    """Raised when video compilation fails."""
     pass
 
 
@@ -121,7 +98,5 @@ class VideoCompilationError(AIStudioError):
 # ==========================================================
 
 class AudioGenerationError(AIStudioError):
-    """
-    Raised when audio generation fails.
-    """
+    """Raised when audio generation fails."""
     pass

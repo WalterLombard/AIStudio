@@ -28,7 +28,7 @@ class SceneState(BaseModel):
     Complete production state for one documentary scene.
     """
 
-    scene_number: int
+    scene_number: int | str = 1
 
     outline: OutlineScene | None = None
 

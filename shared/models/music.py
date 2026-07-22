@@ -10,6 +10,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -47,10 +48,12 @@ class MusicData(BaseModel):
 
 class MusicSceneResponse(BaseModel):
     """
-    Returned by the LLM when generating ONE music cue.
+    Returned by the LLM when generating music cues.
+    Supports both plural 'cues' array and singular 'cue' payload.
     """
 
-    cue: MusicCue
+    cues: list[MusicCue] = Field(default_factory=list)
+    cue: Optional[MusicCue] = None
 
 
 class MusicAsset(BaseModel):

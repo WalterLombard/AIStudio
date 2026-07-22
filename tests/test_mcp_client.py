@@ -1,18 +1,24 @@
 from shared.mcp_client import MCPClient
 
-client = MCPClient()
 
-response = client.generate(
+def test_mcp_client():
+    client = MCPClient()
 
-"""
-Say hello.
+    response = client.generate(
+        """
+        Say hello.
 
-Reply with only:
+        Reply with only:
 
-Hello AI Studio
+        Hello AI Studio
+        """
+    )
 
-"""
+    print("Response from MCP Client:")
+    print(response)
 
-)
+    assert response is not None
 
-print(response)
+
+if __name__ == "__main__":
+    test_mcp_client()

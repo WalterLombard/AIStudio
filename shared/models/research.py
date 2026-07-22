@@ -6,6 +6,8 @@ Defines all research information gathered for the documentary.
 Author : AIStudio
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 
@@ -14,9 +16,9 @@ class Misconception(BaseModel):
     A common misconception and its factual correction.
     """
 
-    myth: str
+    myth: str = ""
 
-    reality: str
+    reality: str = ""
 
 
 class ResearchData(BaseModel):

@@ -16,21 +16,13 @@ from pathlib import Path
 
 
 class Logger:
-    """
-    Central logging service for AIStudio.
-    """
+    """Central logging service for AIStudio."""
 
     LOG_DIRECTORY = Path("logs")
 
     @classmethod
-    def get_logger(
-        cls,
-        name: str,
-    ) -> logging.Logger:
-        """
-        Returns a configured logger.
-        """
-
+    def get_logger(cls, name: str) -> logging.Logger:
+        """Returns a configured logger instance."""
         cls.LOG_DIRECTORY.mkdir(
             parents=True,
             exist_ok=True,
@@ -54,15 +46,12 @@ class Logger:
             log_file,
             encoding="utf-8",
         )
-
         file_handler.setFormatter(formatter)
 
         console_handler = logging.StreamHandler()
-
         console_handler.setFormatter(formatter)
 
         logger.addHandler(file_handler)
-
         logger.addHandler(console_handler)
 
         logger.propagate = False
@@ -70,15 +59,6 @@ class Logger:
         return logger
 
 
-def get_logger(
-    name: str,
-) -> logging.Logger:
-    """
-    Convenience function used throughout AIStudio.
-
-    Example
-    -------
-    logger = get_logger("ExecutiveProducer")
-    """
-
+def get_logger(name: str) -> logging.Logger:
+    """Convenience function used throughout AIStudio."""
     return Logger.get_logger(name)

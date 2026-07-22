@@ -8,6 +8,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -46,10 +47,14 @@ class NarrationData(BaseModel):
         default_factory=list
     )
 
+    total_duration: float = 0.0
+
 
 class NarrationSceneResponse(BaseModel):
     """
-    Returned by the LLM when generating ONE narration segment.
+    Returned by the LLM when generating narration segments.
+    Supports both singular 'segment' and plural 'segments' payloads.
     """
 
-    segment: NarrationSegment
+    segment: Optional[NarrationSegment] = None
+    segments: list[NarrationSegment] = Field(default_factory=list)

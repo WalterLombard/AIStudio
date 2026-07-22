@@ -6,6 +6,9 @@ Defines the documentary script produced by the Script Agent.
 Author : AIStudio
 """
 
+from __future__ import annotations
+
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -14,13 +17,13 @@ class ScriptLine(BaseModel):
     A single narration block within a documentary scene.
     """
 
-    order: int
+    order: int | str = 1
 
-    narration: str
+    narration: str = ""
 
     visual_description: str = ""
 
-    duration: int
+    duration: float = 0.0
 
 
 class ScriptScene(BaseModel):
@@ -28,11 +31,11 @@ class ScriptScene(BaseModel):
     One completed documentary scene.
     """
 
-    scene: int
+    scene: int | str = 1
 
-    title: str
+    title: str = ""
 
-    duration: int
+    duration: float = 0.0
 
     lines: list[ScriptLine] = Field(default_factory=list)
 
@@ -47,7 +50,9 @@ class ScriptData(BaseModel):
 
 class ScriptSceneResponse(BaseModel):
     """
-    Returned by the LLM when generating ONE script scene.
+    Returned by the LLM when generating script scenes.
+    Supports both singular 'scene' and plural 'scenes' payloads.
     """
 
-    scene: ScriptScene
+    scene: Optional[ScriptScene] = None
+    scenes: list[ScriptScene] = Field(default_factory=list)

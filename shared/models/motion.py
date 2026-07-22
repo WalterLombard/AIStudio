@@ -8,6 +8,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -61,7 +62,9 @@ class MotionData(BaseModel):
 
 class MotionSceneResponse(BaseModel):
     """
-    Returned by the LLM when generating ONE camera move.
+    Returned by the LLM when generating camera moves.
+    Supports both plural 'scenes' array and singular 'scene' payload.
     """
 
-    scene: CameraMove
+    scenes: list[CameraMove] = Field(default_factory=list)
+    scene: Optional[CameraMove] = None

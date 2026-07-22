@@ -10,7 +10,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -48,7 +48,7 @@ class AssetRecord(BaseModel):
     version: int = 1
 
     created: datetime = Field(
-        default_factory=datetime.utcnow
+        default_factory=lambda: datetime.now(timezone.utc)
     )
 
     metadata: dict = Field(

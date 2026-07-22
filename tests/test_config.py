@@ -1,46 +1,29 @@
 from shared.config import config
 
 
-print()
+def test_config_loading():
+    print("\nApplication")
+    print("----------------")
+    print(f"Name    : {config.application.name}")
+    print(f"Version : {config.application.version}")
 
-print("Application")
+    print("\nLLM")
+    print("----------------")
+    print(f"Provider: {config.models.llm.provider}")
+    print(f"Model   : {config.models.llm.model}")
 
-print("----------------")
+    print("\nImage")
+    print("----------------")
+    print(f"Model   : {config.models.image.model}")
 
-print(config.application.name)
+    print("\nVideo")
+    print("----------------")
+    print(f"Model   : {config.models.video.model}")
 
-print(config.application.version)
+    print("\nProjects Folder")
+    print("----------------")
+    print(f"Path    : {config.paths.projects}")
 
-print()
 
-print("LLM")
-
-print("----------------")
-
-print(config.models.llm.provider)
-
-print(config.models.llm.model)
-
-print()
-
-print("Image")
-
-print("----------------")
-
-print(config.models.image.model)
-
-print()
-
-print("Video")
-
-print("----------------")
-
-print(config.models.video.model)
-
-print()
-
-print("Projects Folder")
-
-print("----------------")
-
-print(config.paths.projects)
+if __name__ == "__main__":
+    test_config_loading()

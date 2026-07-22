@@ -9,6 +9,7 @@ Author : AIStudio
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -22,7 +23,7 @@ class SFXResult(BaseModel):
 
     provider: str
 
-    metadata: dict
+    metadata: dict[str, Any]
 
 
 class SFXService:
@@ -38,7 +39,7 @@ class SFXService:
 
     def generate(
         self,
-        cue,
+        cue: Any,
     ) -> SFXResult:
 
         filename = f"{uuid4()}.wav"
@@ -47,7 +48,10 @@ class SFXService:
 
         file.touch()
 
-        duration = cue.end_time - cue.start_time
+        start_time = getattr(cue, "start_time", 0.0)
+        end_time = getattr(cue, "end_time", 2.0)
+
+        duration = end_time - start_time
 
         if duration <= 0:
 
@@ -63,11 +67,11 @@ class SFXService:
 
             metadata={
 
-                "effect": cue.effect,
+                "effect": getattr(cue, "effect", "ambient"),
 
-                "description": cue.description,
+                "description": getattr(cue, "description", ""),
 
-                "intensity": cue.intensity,
+                "intensity": getattr(cue, "intensity", 0.5),
 
             },
 

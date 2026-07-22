@@ -10,6 +10,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -72,6 +73,8 @@ class ShotData(BaseModel):
 class ShotSceneResponse(BaseModel):
     """
     Returned from one LLM call.
+    Supports both singular 'shot' and plural 'shots' payloads.
     """
 
-    shot: ShotSpecification
+    shot: Optional[ShotSpecification] = None
+    shots: list[ShotSpecification] = Field(default_factory=list)

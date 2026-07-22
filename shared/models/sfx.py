@@ -14,6 +14,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -56,10 +57,12 @@ class SFXData(BaseModel):
 
 class SFXSceneResponse(BaseModel):
     """
-    Expected JSON response from the LLM for a single storyboard shot.
+    Expected JSON response from the LLM for sound effects planning.
+    Supports both singular 'cue' and plural 'cues' payloads.
     """
 
-    cue: SFXCue
+    cue: Optional[SFXCue] = None
+    cues: list[SFXCue] = Field(default_factory=list)
 
 
 class SFXAsset(BaseModel):
