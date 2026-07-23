@@ -8,7 +8,7 @@ Author : AIStudio
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from .project import ProjectInfo
 from .production_brief import ProductionBrief
@@ -34,6 +34,7 @@ class ProjectState(BaseModel):
     """
     Global project state shared by every AIStudio agent.
     """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project_info: ProjectInfo = Field(default_factory=ProjectInfo)
 

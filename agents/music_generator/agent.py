@@ -7,7 +7,6 @@ Triggers music audio generation using MusicService or FastMCP music server.
 Author : AIStudio
 """
 
-from __for_tests__ import *
 from __future__ import annotations
 
 import json
@@ -78,7 +77,6 @@ class MusicGeneratorAgent:
 
         try:
             if generate_music_track and hasattr(generate_music_track, "generate_cue_specification"):
-                # If the server supports separate specification generation
                 result = generate_music_track(
                     production_brief=production_brief,
                     motion=motion,
@@ -116,7 +114,6 @@ class MusicGeneratorAgent:
             ) from err
 
         try:
-            # Flexible parsing: Handles {"cues": [...]}, {"cue": {...}}, and direct array wrappers
             if isinstance(result, MusicSceneResponse):
                 return result
 

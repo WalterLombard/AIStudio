@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from rich.pretty import data
-
 
 class ProjectMemory:
     """
