@@ -33,7 +33,7 @@ LOGGER = logging.getLogger("ShotPlannerAgent")
 
 class ShotPlannerAgent:
     """
-    Produces the complete cinematography plan.
+    Produces the complete cinematography plan using compact state memory.
     """
 
     def __init__(self) -> None:
@@ -63,9 +63,11 @@ class ShotPlannerAgent:
         visual_scene: dict | None,
         storyboard_shot: dict,
         scene_id: str,
+        last_shot_spec: dict | None,
+        outline_summary: list[dict],
     ) -> ShotSceneResponse:
         """
-        Generate ONE shot specification.
+        Generate ONE shot specification using compact context payloads.
         """
         shot_num = storyboard_shot.get("shot_number", "?")
 
@@ -82,14 +84,22 @@ class ShotPlannerAgent:
                     visual_scene=visual_scene,
                     scene_id=scene_id,
                     storyboard_shot=storyboard_shot,
+                    completed_shots=[last_shot_spec] if last_shot_spec else [],
                 )
             else:
                 prompt = json.dumps(
                     {
-                        "production_brief": production_brief,
+                        "production_brief": {
+                            "title": production_brief.get("title"),
+                            "topic": production_brief.get("topic"),
+                            "tone": production_brief.get("tone"),
+                            "story_arc": production_brief.get("story_arc"),
+                        },
+                        "outline_summary": outline_summary,
                         "visual_scene": visual_scene,
                         "scene_id": scene_id,
                         "storyboard_shot": storyboard_shot,
+                        "previous_shot": last_shot_spec,
                     },
                     indent=4,
                     ensure_ascii=False,
@@ -128,7 +138,7 @@ class ShotPlannerAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the shot planning pipeline step.
+        Executes the shot planning pipeline step using memory integration.
         """
         self._validate_state(state)
 
@@ -136,6 +146,13 @@ class ShotPlannerAgent:
 
         shot_data = ShotData()
         production_brief = state.production_brief.model_dump()
+
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory and hasattr(state.memory, "get_compact_outline_summary")
+            else []
+        )
 
         # Build flexible lookup table by scene_id (supporting both int and str keys)
         visual_lookup = {}
@@ -145,6 +162,8 @@ class ShotPlannerAgent:
             if sc_id is not None:
                 visual_lookup[str(sc_id)] = visual_dict
                 visual_lookup[sc_id] = visual_dict
+
+        last_shot_spec: dict | None = None
 
         # Generate shot specifications scene by scene, shot by shot
         for scene in state.storyboard.scenes:
@@ -157,9 +176,12 @@ class ShotPlannerAgent:
                     visual_scene,
                     shot.model_dump(),
                     scene_id,
+                    last_shot_spec,
+                    outline_summary,
                 )
 
                 shot_data.shots.append(response.shot)
+                last_shot_spec = response.shot.model_dump()
 
         state.shots = shot_data
         state.current_stage = "shot_planning"

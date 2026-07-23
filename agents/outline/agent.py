@@ -21,6 +21,7 @@ from shared.services import (
     LLMService,
     PromptService,
 )
+from shared.services.memory_service import ProjectMemory
 
 # Optional import of FastMCP outline server module
 try:
@@ -33,7 +34,7 @@ LOGGER = logging.getLogger("OutlineAgent")
 
 class OutlineAgent:
     """
-    Generates the documentary outline scene by scene.
+    Generates the documentary outline scene by scene utilizing project memory.
     """
 
     def __init__(self) -> None:
@@ -60,10 +61,10 @@ class OutlineAgent:
         scene_number: int,
         total_scenes: int,
         scene_duration: int,
-        completed_scenes: list[dict],
+        last_scene_context: dict | None,
     ) -> OutlineSceneResponse:
         """
-        Generate one outline scene with context of previously generated scenes.
+        Generate one outline scene with context of only the previous scene memory.
         """
         LOGGER.info("Generating outline scene %s of %s", scene_number, total_scenes)
 
@@ -75,17 +76,22 @@ class OutlineAgent:
                     scene_number=scene_number,
                     total_scenes=total_scenes,
                     scene_duration=scene_duration,
-                    completed_scenes=completed_scenes,
+                    completed_scenes=[last_scene_context] if last_scene_context else [],
                 )
             else:
                 prompt = json.dumps(
                     {
-                        "production_brief": production_brief,
-                        "research": research,
+                        "production_brief": {
+                            "title": production_brief.get("title"),
+                            "topic": production_brief.get("topic"),
+                            "tone": production_brief.get("tone"),
+                            "story_arc": production_brief.get("story_arc"),
+                        },
+                        "research_topics": research.get("search_keywords", []),
                         "scene_number": scene_number,
                         "total_scenes": total_scenes,
                         "scene_duration": scene_duration,
-                        "completed_scenes": completed_scenes,
+                        "previous_scene": last_scene_context,
                     },
                     indent=4,
                     ensure_ascii=False,
@@ -104,7 +110,6 @@ class OutlineAgent:
             if isinstance(result, OutlineSceneResponse):
                 return result
 
-            # Flexible parsing: Handles both {"scene": {...}} and direct {...} outputs
             if isinstance(result, dict):
                 if "scene" in result and isinstance(result["scene"], dict):
                     return OutlineSceneResponse(**result)
@@ -122,7 +127,7 @@ class OutlineAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the outline generation pipeline step.
+        Executes the outline generation pipeline step with memory integration.
         """
         self._validate_state(state)
 
@@ -141,20 +146,26 @@ class OutlineAgent:
             total_duration=total_duration,
         )
 
-        completed_scenes: list[dict] = []
+        # Initialize ProjectMemory on state if not present
+        if state.memory is None:
+            state.memory = ProjectMemory()
 
         for scene_number in range(1, total_scenes + 1):
+            last_scene_context = state.memory.get_preceding_scene_context(scene_number)
+
             response = self._generate_scene(
                 production_brief=production_brief,
                 research=research,
                 scene_number=scene_number,
                 total_scenes=total_scenes,
                 scene_duration=scene_duration,
-                completed_scenes=completed_scenes,
+                last_scene_context=last_scene_context,
             )
 
             outline.scenes.append(response.scene)
-            completed_scenes.append(response.scene.model_dump())
+            
+            # Store compressed summary in centralized project memory
+            state.memory.store_scene(scene_number, response.scene.model_dump())
 
         state.outline = outline
         state.current_stage = "outline"

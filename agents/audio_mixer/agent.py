@@ -90,9 +90,10 @@ class AudioMixerAgent:
         asset = AssetRecord(
             asset_type="master_audio",
             stage="audio_mixing",
-            provider="ffmpeg",
+            provider=getattr(master, "provider", "ffmpeg"),
             filename=getattr(master, "filename", str(master)),
             duration=getattr(master, "duration", 0.0),
+            metadata=getattr(master, "metadata", {}),
         )
 
         registered_asset = self.assets.register(asset)

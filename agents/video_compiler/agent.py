@@ -66,22 +66,41 @@ class VideoCompilerAgent:
 
         LOGGER.info("Starting Video Compiler Agent")
 
+        subtitle_path = getattr(state, "subtitle_file_path", None)
+
         try:
             # Prefer FastMCP compiler server if function is imported
             if assemble_final_video:
                 LOGGER.info("Invoking compiler_server for final video assembly...")
-                video = assemble_final_video(
-                    images=state.images,
-                    motion=state.motion,
-                    audio=state.master_audio,
-                )
+                # Pass optional subtitle path if supported by server signature
+                try:
+                    video = assemble_final_video(
+                        images=state.images,
+                        motion=state.motion,
+                        audio=state.master_audio,
+                        subtitle_path=subtitle_path,
+                    )
+                except TypeError:
+                    video = assemble_final_video(
+                        images=state.images,
+                        motion=state.motion,
+                        audio=state.master_audio,
+                    )
             else:
                 LOGGER.info("Fallback: Invoking VideoCompilerService for final video assembly...")
-                video = self.compiler.compile(
-                    images=state.images,
-                    motion=state.motion,
-                    audio=state.master_audio,
-                )
+                try:
+                    video = self.compiler.compile(
+                        images=state.images,
+                        motion=state.motion,
+                        audio=state.master_audio,
+                        subtitle_path=subtitle_path,
+                    )
+                except TypeError:
+                    video = self.compiler.compile(
+                        images=state.images,
+                        motion=state.motion,
+                        audio=state.master_audio,
+                    )
         except Exception as err:
             raise RuntimeError(
                 f"VideoCompilerAgent failure during rendering stage: {err}"
@@ -91,9 +110,10 @@ class VideoCompilerAgent:
         asset = AssetRecord(
             asset_type="video",
             stage="video_compile",
-            provider="ffmpeg",
+            provider=getattr(video, "provider", "ffmpeg"),
             filename=getattr(video, "filename", "output.mp4"),
             duration=getattr(video, "duration", 0.0),
+            metadata=getattr(video, "metadata", {}),
         )
 
         registered_asset = self.assets.register(asset)

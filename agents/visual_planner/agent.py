@@ -33,7 +33,7 @@ LOGGER = logging.getLogger("VisualPlannerAgent")
 
 class VisualPlannerAgent:
     """
-    Generates the complete visual production plan.
+    Generates the complete visual production plan utilizing project memory context.
     """
 
     def __init__(self) -> None:
@@ -57,9 +57,11 @@ class VisualPlannerAgent:
         self,
         production_brief: dict,
         storyboard_scene: dict,
+        last_visual_scene: dict | None,
+        outline_summary: list[dict],
     ) -> VisualSceneResponse:
         """
-        Generate one visual production specification.
+        Generate one visual production specification with compact context payloads.
         """
         scene_num = storyboard_scene.get("scene_number", storyboard_scene.get("scene_id", "?"))
 
@@ -70,12 +72,20 @@ class VisualPlannerAgent:
                 result = generate_visual_scene(
                     production_brief=production_brief,
                     storyboard_scene=storyboard_scene,
+                    completed_scenes=[last_visual_scene] if last_visual_scene else [],
                 )
             else:
                 prompt = json.dumps(
                     {
-                        "production_brief": production_brief,
+                        "production_brief": {
+                            "title": production_brief.get("title"),
+                            "topic": production_brief.get("topic"),
+                            "tone": production_brief.get("tone"),
+                            "story_arc": production_brief.get("story_arc"),
+                        },
+                        "outline_summary": outline_summary,
                         "storyboard_scene": storyboard_scene,
+                        "previous_visual_scene": last_visual_scene,
                     },
                     indent=4,
                     ensure_ascii=False,
@@ -114,7 +124,7 @@ class VisualPlannerAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the visual planning pipeline step.
+        Executes the visual planning pipeline step using memory integration.
         """
         self._validate_state(state)
 
@@ -123,13 +133,27 @@ class VisualPlannerAgent:
         production_brief = state.production_brief.model_dump()
         visual_plan = VisualData()
 
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory and hasattr(state.memory, "get_compact_outline_summary")
+            else []
+        )
+
+        last_visual_scene: dict | None = None
+
         for storyboard_scene in state.storyboard.scenes:
+            scene_dict = storyboard_scene.model_dump()
+
             response = self._generate_scene(
                 production_brief=production_brief,
-                storyboard_scene=storyboard_scene.model_dump(),
+                storyboard_scene=scene_dict,
+                last_visual_scene=last_visual_scene,
+                outline_summary=outline_summary,
             )
 
             visual_plan.scenes.append(response.scene)
+            last_visual_scene = response.scene.model_dump()
 
         state.visuals = visual_plan
         state.current_stage = "visual_planning"

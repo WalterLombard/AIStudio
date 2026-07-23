@@ -39,7 +39,7 @@ LOGGER = logging.getLogger("SFXGeneratorAgent")
 
 class SFXGeneratorAgent:
     """
-    Generates documentary sound effects one shot at a time.
+    Generates documentary sound effects one shot at a time using compact state memory.
     """
 
     def __init__(self) -> None:
@@ -63,40 +63,71 @@ class SFXGeneratorAgent:
 
     def _generate_cue(
         self,
+        production_brief: dict | None,
         motion: dict,
         narration: dict,
-        production_brief: dict | None = None,
+        last_sfx_spec: dict | None,
+        outline_summary: list[dict],
     ) -> SFXSceneResponse:
         """
-        Generate sound effects for one shot.
+        Generate sound effects for one shot using compact context payloads.
         """
         scene_id = motion.get("scene_id", narration.get("scene_id", "?"))
         shot_num = motion.get("shot_number", narration.get("shot_number", "?"))
 
-        prompt = json.dumps(
-            {
-                "production_brief": production_brief or {},
-                "motion": motion,
-                "narration": narration,
-            },
-            indent=4,
-            ensure_ascii=False,
-        )
-
         LOGGER.info("Generating SFX cue specification for Scene %s, Shot %s", scene_id, shot_num)
 
-        result = self.llm.generate_json(
-            system=self.system_prompt,
-            prompt=prompt,
-            temperature=0.20,
-        )
+        try:
+            if generate_sfx_effect and hasattr(generate_sfx_effect, "generate_cue_specification"):
+                result = generate_sfx_effect(
+                    production_brief=production_brief,
+                    motion=motion,
+                    narration=narration,
+                    completed_cues=[last_sfx_spec] if last_sfx_spec else [],
+                )
+            else:
+                prompt_payload = {
+                    "motion": motion,
+                    "narration": narration,
+                    "outline_summary": outline_summary,
+                    "previous_sfx": last_sfx_spec,
+                }
+                if production_brief:
+                    prompt_payload["production_brief"] = {
+                        "title": production_brief.get("title"),
+                        "topic": production_brief.get("topic"),
+                        "tone": production_brief.get("tone"),
+                    }
+
+                prompt = json.dumps(
+                    prompt_payload,
+                    indent=4,
+                    ensure_ascii=False,
+                )
+                result = self.llm.generate_json(
+                    system=self.system_prompt,
+                    prompt=prompt,
+                    temperature=0.20,
+                )
+        except Exception as err:
+            raise RuntimeError(
+                f"SFXGeneratorAgent failure during cue generation for Scene {scene_id} Shot {shot_num}: {err}"
+            ) from err
 
         try:
             # Flexible parsing: Handles {"cue": {...}}, {"cues": [...]}, and direct object responses
-            if "cue" in result and isinstance(result["cue"], dict):
-                return SFXSceneResponse(**result)
-            elif "cues" in result and isinstance(result["cues"], list) and len(result["cues"]) > 0:
-                return SFXSceneResponse(cue=result["cues"][0])
+            if isinstance(result, SFXSceneResponse):
+                return result
+
+            if isinstance(result, dict):
+                if "cue" in result and isinstance(result["cue"], dict):
+                    return SFXSceneResponse(**result)
+                elif "cues" in result and isinstance(result["cues"], list) and len(result["cues"]) > 0:
+                    return SFXSceneResponse(cue=result["cues"][0])
+                else:
+                    return SFXSceneResponse(cue=result)
+            elif isinstance(result, list) and len(result) > 0:
+                return SFXSceneResponse(cue=result[0])
             else:
                 return SFXSceneResponse(cue=result)
         except Exception as err:
@@ -109,14 +140,23 @@ class SFXGeneratorAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the SFX planning and audio asset generation pipeline step.
+        Executes the SFX planning and audio asset generation pipeline step using memory integration.
         """
         self._validate_state(state)
 
         LOGGER.info("Starting Sound Effects Generator Agent")
 
         plan = SFXData()
-        production_brief = state.production_brief.model_dump() if state.production_brief else {}
+        production_brief = state.production_brief.model_dump() if state.production_brief else None
+
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory and hasattr(state.memory, "get_compact_outline_summary")
+            else []
+        )
+
+        last_sfx_spec: dict | None = None
 
         # Process motion scenes and narration segments
         for motion, narration in zip(
@@ -124,13 +164,20 @@ class SFXGeneratorAgent:
             state.narration.segments,
             strict=False,
         ):
+            motion_dict = motion.model_dump() if hasattr(motion, "model_dump") else motion
+            narration_dict = narration.model_dump() if hasattr(narration, "model_dump") else narration
+
             response = self._generate_cue(
-                motion=motion.model_dump(),
-                narration=narration.model_dump(),
                 production_brief=production_brief,
+                motion=motion_dict,
+                narration=narration_dict,
+                last_sfx_spec=last_sfx_spec,
+                outline_summary=outline_summary,
             )
 
-            plan.cues.append(response.cue)
+            if response and hasattr(response, "cue") and response.cue:
+                plan.cues.append(response.cue)
+                last_sfx_spec = response.cue.model_dump() if hasattr(response.cue, "model_dump") else response.cue
 
         # Generate SFX assets
         library = SFXLibrary()

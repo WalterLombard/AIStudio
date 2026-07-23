@@ -33,7 +33,7 @@ LOGGER = logging.getLogger("NarrationDesignerAgent")
 
 class NarrationDesignerAgent:
     """
-    Produces voice performance and timing specifications for TTS generation.
+    Produces voice performance and timing specifications for TTS generation using compact state memory.
     """
 
     def __init__(self) -> None:
@@ -55,11 +55,14 @@ class NarrationDesignerAgent:
 
     def _generate_segment(
         self,
+        production_brief: dict | None,
         shot: dict,
         motion_scene: dict | None,
+        last_narration_spec: dict | None,
+        outline_summary: list[dict],
     ) -> NarrationSceneResponse:
         """
-        Generate narration performance for one shot.
+        Generate narration performance for one shot using compact context payloads.
         """
         shot_num = shot.get("shot_number", "?")
         scene_id = shot.get("scene_id", "?")
@@ -69,15 +72,28 @@ class NarrationDesignerAgent:
         try:
             if generate_narration_segment:
                 result = generate_narration_segment(
+                    production_brief=production_brief,
                     shot=shot,
                     motion_scene=motion_scene,
+                    completed_segments=[last_narration_spec] if last_narration_spec else [],
                 )
             else:
+                prompt_payload = {
+                    "shot": shot,
+                    "motion": motion_scene,
+                    "outline_summary": outline_summary,
+                    "previous_narration": last_narration_spec,
+                }
+                if production_brief:
+                    prompt_payload["production_brief"] = {
+                        "title": production_brief.get("title"),
+                        "topic": production_brief.get("topic"),
+                        "tone": production_brief.get("tone"),
+                        "target_audience": production_brief.get("target_audience"),
+                    }
+
                 prompt = json.dumps(
-                    {
-                        "shot": shot,
-                        "motion": motion_scene,
-                    },
+                    prompt_payload,
                     indent=4,
                     ensure_ascii=False,
                 )
@@ -119,13 +135,21 @@ class NarrationDesignerAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the narration performance design pipeline step.
+        Executes the narration performance design pipeline step using memory integration.
         """
         self._validate_state(state)
 
         LOGGER.info("Starting Narration Designer Agent")
 
         narration = NarrationData()
+        production_brief = state.production_brief.model_dump() if state.production_brief else None
+
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory and hasattr(state.memory, "get_compact_outline_summary")
+            else []
+        )
 
         # Build lookup table for motion scenes by scene_id
         motion_lookup = {}
@@ -135,6 +159,8 @@ class NarrationDesignerAgent:
             if sc_id is not None:
                 motion_lookup[str(sc_id)] = m_dict
 
+        last_narration_spec: dict | None = None
+
         # Process each shot independently without truncating via zip
         for shot in state.shots.shots:
             shot_dict = shot.model_dump()
@@ -142,15 +168,21 @@ class NarrationDesignerAgent:
             motion_scene = motion_lookup.get(scene_id)
 
             response = self._generate_segment(
+                production_brief=production_brief,
                 shot=shot_dict,
                 motion_scene=motion_scene,
+                last_narration_spec=last_narration_spec,
+                outline_summary=outline_summary,
             )
 
             # Safely unpack list of generated segments
             if hasattr(response, "segments") and response.segments:
                 narration.segments.extend(response.segments)
+                if response.segments:
+                    last_narration_spec = response.segments[-1].model_dump() if hasattr(response.segments[-1], "model_dump") else response.segments[-1]
             elif hasattr(response, "segment") and response.segment:
                 narration.segments.append(response.segment)
+                last_narration_spec = response.segment.model_dump() if hasattr(response.segment, "model_dump") else response.segment
 
         state.narration = narration
         state.current_stage = "narration"

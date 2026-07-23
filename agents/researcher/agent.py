@@ -42,7 +42,7 @@ T = TypeVar("T", bound=BaseModel)
 
 class ResearchAgent:
     """
-    Generates the complete research package across multiple focused sub-tasks.
+    Generates the complete research package across multiple focused sub-tasks using compact state memory.
     """
 
     def __init__(self) -> None:
@@ -62,6 +62,7 @@ class ResearchAgent:
         self,
         task: str,
         production_brief: dict,
+        outline_summary: list[dict],
         response_model: Type[T],
     ) -> T:
         """
@@ -70,17 +71,25 @@ class ResearchAgent:
         LOGGER.info("Generating research section: %s", task)
 
         try:
-            if generate_research_section:
+            if generate_research_section and hasattr(generate_research_section, "generate_section_with_context"):
+                result = generate_research_section(
+                    task=task,
+                    production_brief=production_brief,
+                    outline_summary=outline_summary,
+                )
+            elif generate_research_section:
                 result = generate_research_section(
                     task=task,
                     production_brief=production_brief,
                 )
             else:
+                prompt_payload = {
+                    "task": task,
+                    "production_brief": production_brief,
+                    "outline_summary": outline_summary,
+                }
                 prompt = json.dumps(
-                    {
-                        "task": task,
-                        "production_brief": production_brief,
-                    },
+                    prompt_payload,
                     indent=4,
                     ensure_ascii=False,
                 )
@@ -112,19 +121,28 @@ class ResearchAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Builds and validates the complete ResearchData object.
+        Builds and validates the complete ResearchData object using memory integration.
         """
         self._validate_state(state)
 
         LOGGER.info("Starting Research Agent")
 
-        production_brief = state.production_brief.model_dump()
+        production_brief = state.production_brief.model_dump() if state.production_brief else {}
+
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory and hasattr(state.memory, "get_compact_outline_summary")
+            else []
+        )
+
         research_kwargs = {}
 
         # 1. Background
         background = self._generate_and_validate_section(
             task="background",
             production_brief=production_brief,
+            outline_summary=outline_summary,
             response_model=BackgroundResponse,
         )
         research_kwargs.update(background.model_dump())
@@ -133,6 +151,7 @@ class ResearchAgent:
         facts = self._generate_and_validate_section(
             task="facts",
             production_brief=production_brief,
+            outline_summary=outline_summary,
             response_model=FactsResponse,
         )
         research_kwargs.update(facts.model_dump())
@@ -141,6 +160,7 @@ class ResearchAgent:
         misconceptions = self._generate_and_validate_section(
             task="misconceptions",
             production_brief=production_brief,
+            outline_summary=outline_summary,
             response_model=MisconceptionsResponse,
         )
         research_kwargs.update(misconceptions.model_dump())
@@ -149,6 +169,7 @@ class ResearchAgent:
         production = self._generate_and_validate_section(
             task="production",
             production_brief=production_brief,
+            outline_summary=outline_summary,
             response_model=ProductionResponse,
         )
         research_kwargs.update(production.model_dump())
@@ -157,6 +178,7 @@ class ResearchAgent:
         references = self._generate_and_validate_section(
             task="references",
             production_brief=production_brief,
+            outline_summary=outline_summary,
             response_model=ReferencesResponse,
         )
         research_kwargs.update(references.model_dump())

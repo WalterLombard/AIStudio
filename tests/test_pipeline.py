@@ -6,7 +6,7 @@ Runs the complete AIStudio pipeline.
 Author : AIStudio
 """
 
-from pipeline import PipelineRunner
+from shared.pipeline.runner import PipelineRunner
 
 
 def main() -> None:

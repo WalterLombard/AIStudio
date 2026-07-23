@@ -36,9 +36,9 @@ class SubtitleAgent:
         """
         Validates required upstream audio dependencies.
         """
-        if state.audio is None and not hasattr(state, "master_audio_path"):
+        if state.audio is None and not hasattr(state, "master_audio_path") and not getattr(state, "master_audio", None):
             raise ValueError(
-                "SubtitleAgent failure: Audio data or master_audio_path must exist before SubtitleAgent runs."
+                "SubtitleAgent failure: Audio data or master audio must exist before SubtitleAgent runs."
             )
 
     def run(self, state: ProjectState) -> ProjectState:
@@ -51,26 +51,35 @@ class SubtitleAgent:
 
         # Determine target audio file path from state
         audio_path = getattr(state, "master_audio_path", None)
+        if not audio_path and state.master_audio:
+            audio_path = getattr(state.master_audio, "filename", None)
         if not audio_path and state.audio:
-            audio_path = getattr(state.audio, "master_audio_path", None)
+            audio_path = getattr(state.audio, "master_audio_path", None) or getattr(state.audio, "filename", None)
 
         if not audio_path or not Path(str(audio_path)).exists():
-            LOGGER.warning("No physical audio file found to generate subtitles. Skipping.")
+            LOGGER.warning("No physical audio file found at path '%s' to generate subtitles. Skipping.", audio_path)
+            state.current_stage = "subtitles"
+            state.status = "subtitles_skipped"
             return state
 
-        output_srt_path = Path(audio_path).parent / "captions.srt"
+        output_srt_path = Path(str(audio_path)).parent / "captions.srt"
 
-        if generate_subtitles:
-            srt_file = generate_subtitles(
-                audio_path=str(audio_path),
-                output_path=str(output_srt_path),
-            )
-            state.subtitle_file_path = srt_file
-            LOGGER.info("Subtitle file generated at %s", srt_file)
-        else:
-            LOGGER.error("Subtitle server function unavailable.")
-            state.status = "failed"
-            return state
+        try:
+            if generate_subtitles:
+                srt_file = generate_subtitles(
+                    audio_path=str(audio_path),
+                    output_path=str(output_srt_path),
+                )
+                state.subtitle_file_path = str(srt_file)
+                LOGGER.info("Subtitle file generated at %s", srt_file)
+            else:
+                LOGGER.error("Subtitle server function unavailable.")
+                state.status = "failed"
+                return state
+        except Exception as err:
+            raise RuntimeError(
+                f"SubtitleAgent failure during caption generation: {err}"
+            ) from err
 
         state.current_stage = "subtitles"
         state.status = "subtitles_complete"

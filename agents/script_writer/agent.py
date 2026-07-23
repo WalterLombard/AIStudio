@@ -36,7 +36,7 @@ LOGGER = logging.getLogger("ScriptWriterAgent")
 
 class ScriptWriterAgent:
     """
-    Generates documentary narration scene by scene.
+    Generates documentary narration scene by scene utilizing project memory.
     """
 
     def __init__(self) -> None:
@@ -65,10 +65,11 @@ class ScriptWriterAgent:
         production_brief: dict,
         research: dict,
         outline_scene: dict,
-        completed_scenes: list[dict],
+        last_script_scene: dict | None,
+        outline_summary: list[dict],
     ) -> ScriptSceneResponse:
         """
-        Generate one script scene with context of previously generated narration.
+        Generate one script scene using concise state memory and the current outline scene.
         """
         scene_num = outline_scene.get("scene_number", outline_scene.get("scene", "Unknown"))
         LOGGER.info("Generating script scene %s", scene_num)
@@ -79,15 +80,21 @@ class ScriptWriterAgent:
                     production_brief=production_brief,
                     research=research,
                     outline_scene=outline_scene,
-                    completed_scenes=completed_scenes,
+                    completed_scenes=[last_script_scene] if last_script_scene else [],
                 )
             else:
                 prompt = json.dumps(
                     {
-                        "production_brief": production_brief,
-                        "research": research,
-                        "outline_scene": outline_scene,
-                        "completed_scenes": completed_scenes,
+                        "production_brief": {
+                            "title": production_brief.get("title"),
+                            "topic": production_brief.get("topic"),
+                            "tone": production_brief.get("tone"),
+                            "story_arc": production_brief.get("story_arc"),
+                        },
+                        "research_topics": research.get("search_keywords", []),
+                        "outline_summary": outline_summary,
+                        "current_outline_scene": outline_scene,
+                        "previous_script_scene": last_script_scene,
                     },
                     indent=4,
                     ensure_ascii=False,
@@ -106,7 +113,6 @@ class ScriptWriterAgent:
             if isinstance(result, ScriptSceneResponse):
                 return result
 
-            # Flexible parsing: Handles both {"scene": {...}} and direct {...} outputs
             if isinstance(result, dict):
                 if "scene" in result and isinstance(result["scene"], dict):
                     return ScriptSceneResponse(**result)
@@ -124,7 +130,7 @@ class ScriptWriterAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the script writing pipeline step.
+        Executes the script writing pipeline step using project memory.
         """
         self._validate_state(state)
 
@@ -133,20 +139,35 @@ class ScriptWriterAgent:
         production_brief = state.production_brief.model_dump()
         research = state.research.model_dump()
         script = ScriptData()
-        completed_scenes: list[dict] = []
+
+        # Retrieve outline overview from memory if available, or generate a fallback compact list
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory
+            else [{"scene_number": s.scene_number, "title": s.title, "goal": s.goal} for s in state.outline.scenes]
+        )
+
+        last_script_scene: dict | None = None
 
         for outline_scene in state.outline.scenes:
             scene_dict = outline_scene.model_dump()
+            scene_num = scene_dict.get("scene_number")
 
             response = self._generate_scene(
                 production_brief=production_brief,
                 research=research,
                 outline_scene=scene_dict,
-                completed_scenes=completed_scenes,
+                last_script_scene=last_script_scene,
+                outline_summary=outline_summary,
             )
 
             script.scenes.append(response.scene)
-            completed_scenes.append(response.scene.model_dump())
+            last_script_scene = response.scene.model_dump()
+
+            # Optional: store script segment summary in state.memory if desired for subsequent agents
+            if state.memory and scene_num:
+                # You can store or track script milestones here if needed
+                pass
 
         state.script = script
         state.current_stage = "script"

@@ -66,22 +66,28 @@ class VoiceGeneratorAgent:
             scene_id = getattr(segment, "scene_id", f"scene_{idx + 1}")
             LOGGER.info("Synthesizing narration audio for Scene %s", scene_id)
 
+            text = getattr(segment, "text", "")
+            emotion = getattr(segment, "emotion", "neutral")
+            speaking_rate = getattr(segment, "speaking_rate", 1.0)
+            pause_before = getattr(segment, "pause_before", 0.0)
+            pause_after = getattr(segment, "pause_after", 0.0)
+
             try:
                 if generate_narration_audio:
                     result = generate_narration_audio(
-                        text=segment.text,
-                        emotion=getattr(segment, "emotion", "neutral"),
-                        speaking_rate=getattr(segment, "speaking_rate", 1.0),
-                        pause_before=getattr(segment, "pause_before", 0.0),
-                        pause_after=getattr(segment, "pause_after", 0.0),
+                        text=text,
+                        emotion=emotion,
+                        speaking_rate=speaking_rate,
+                        pause_before=pause_before,
+                        pause_after=pause_after,
                     )
                 else:
                     result = self.tts.generate(
-                        text=segment.text,
-                        emotion=getattr(segment, "emotion", "neutral"),
-                        speaking_rate=getattr(segment, "speaking_rate", 1.0),
-                        pause_before=getattr(segment, "pause_before", 0.0),
-                        pause_after=getattr(segment, "pause_after", 0.0),
+                        text=text,
+                        emotion=emotion,
+                        speaking_rate=speaking_rate,
+                        pause_before=pause_before,
+                        pause_after=pause_after,
                     )
             except Exception as err:
                 raise RuntimeError(

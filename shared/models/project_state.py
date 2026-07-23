@@ -27,6 +27,7 @@ from .sfx import SFXLibrary
 from .master_audio import MasterAudioData
 from .video import VideoData
 from .qa import QAReport
+from shared.services.memory_service import ProjectMemory
 
 
 class ProjectState(BaseModel):
@@ -67,6 +68,8 @@ class ProjectState(BaseModel):
     video: VideoData | None = None
 
     qa: QAReport | None = None
+
+    memory: ProjectMemory | None = Field(default=None, exclude=True)
 
     current_stage: str = "created"
 

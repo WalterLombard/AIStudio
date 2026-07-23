@@ -8,7 +8,7 @@ Author : AIStudio
 
 from .asset_service import AssetService
 from .audio_mixer_service import AudioMixerService
-from .comfy_ui_provider import ComfyUIProvider
+from shared.providers.comfyui_provider import ComfyUIProvider
 from .image_service import ImageService
 from .llm_service import LLMService
 from .music_service import MusicService

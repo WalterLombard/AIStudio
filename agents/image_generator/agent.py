@@ -44,7 +44,7 @@ LOGGER = logging.getLogger("ImageGeneratorAgent")
 
 class ImageGeneratorAgent:
     """
-    Generates one image specification/prompt for every planned shot.
+    Generates one image specification/prompt for every planned shot using compact state memory.
     """
 
     def __init__(self) -> None:
@@ -68,9 +68,11 @@ class ImageGeneratorAgent:
         self,
         production_brief: dict,
         shot: dict,
+        last_image_spec: dict | None,
+        outline_summary: list[dict],
     ) -> ImageSceneResponse:
         """
-        Generate one image prompt.
+        Generate one image prompt using compact context payloads.
         """
         scene_id = shot.get("scene_id", "?")
         shot_num = shot.get("shot_number", "?")
@@ -82,12 +84,20 @@ class ImageGeneratorAgent:
                 result = generate_image_specification(
                     production_brief=production_brief,
                     shot=shot,
+                    completed_images=[last_image_spec] if last_image_spec else [],
                 )
             else:
                 prompt = json.dumps(
                     {
-                        "production_brief": production_brief,
+                        "production_brief": {
+                            "title": production_brief.get("title"),
+                            "topic": production_brief.get("topic"),
+                            "tone": production_brief.get("tone"),
+                            "story_arc": production_brief.get("story_arc"),
+                        },
+                        "outline_summary": outline_summary,
                         "shot": shot,
+                        "previous_image_spec": last_image_spec,
                     },
                     indent=4,
                     ensure_ascii=False,
@@ -126,7 +136,7 @@ class ImageGeneratorAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the image generation pipeline step.
+        Executes the image generation pipeline step using memory integration.
         """
         self._validate_state(state)
 
@@ -134,6 +144,15 @@ class ImageGeneratorAgent:
 
         production_brief = state.production_brief.model_dump()
         images = ImageData()
+
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory and hasattr(state.memory, "get_compact_outline_summary")
+            else []
+        )
+
+        last_image_spec: dict | None = None
 
         # Generate one image prompt per shot
         for shot in state.shots.shots:
@@ -144,9 +163,12 @@ class ImageGeneratorAgent:
             response = self._generate_image(
                 production_brief=production_brief,
                 shot=shot_dict,
+                last_image_spec=last_image_spec,
+                outline_summary=outline_summary,
             )
 
             img_obj = response.image
+            last_image_spec = img_obj.model_dump() if hasattr(img_obj, "model_dump") else img_obj
 
             # Post-process or upscale via asset_server if file_path exists on image model
             file_path = getattr(img_obj, "file_path", None) or getattr(img_obj, "path", None)

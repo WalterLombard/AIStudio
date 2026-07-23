@@ -34,7 +34,7 @@ LOGGER = logging.getLogger("ExecutiveProducer")
 
 class ExecutiveProducer:
     """
-    Generates the initial Production Brief.
+    Generates the initial Production Brief and initializes pipeline project state.
     """
 
     def __init__(self) -> None:
@@ -46,17 +46,14 @@ class ExecutiveProducer:
         if not user_request or not user_request.strip():
             raise ValueError("ExecutiveProducer requires a valid, non-empty user_request.")
 
-    def _build_payload(self, user_request: str) -> str:
-        """Formats and serializes input payload for logging and deterministic passing."""
-        payload = {"user_request": user_request}
-        return json.dumps(payload, indent=4, ensure_ascii=False)
-
     def _generate_brief(self, user_request: str) -> ProductionBrief:
         """Calls the LLM service or FastMCP server and parses the result into ProductionBrief."""
         LOGGER.info("Generating production brief from user request...")
 
         try:
-            if generate_production_brief:
+            if generate_production_brief and hasattr(generate_production_brief, "generate_brief_with_context"):
+                result = generate_production_brief(user_request=user_request)
+            elif generate_production_brief:
                 result = generate_production_brief(user_request=user_request)
             else:
                 result = self.llm.generate_json(
@@ -105,9 +102,12 @@ class ExecutiveProducer:
         # Store the production brief
         state.production_brief = brief
 
-        # Populate project metadata
-        state.project_info.project_name = brief.title
-        state.project_info.topic = brief.topic
+        # Populate project metadata safely
+        if hasattr(state, "project_info") and state.project_info:
+            if hasattr(state.project_info, "project_name"):
+                state.project_info.project_name = getattr(brief, "title", "Untitled")
+            if hasattr(state.project_info, "topic"):
+                state.project_info.topic = getattr(brief, "topic", "")
 
         # Update pipeline state
         state.current_stage = "production_brief"

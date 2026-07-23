@@ -33,7 +33,7 @@ LOGGER = logging.getLogger("StoryboardAgent")
 
 class StoryboardAgent:
     """
-    Generates scene-level storyboard shot outlines.
+    Generates scene-level storyboard shot outlines utilizing project memory.
     """
 
     def __init__(self) -> None:
@@ -62,9 +62,11 @@ class StoryboardAgent:
         production_brief: dict,
         outline_scene: dict | None,
         script_scene: dict,
+        last_storyboard_scene: dict | None,
+        outline_summary: list[dict],
     ) -> StoryboardSceneResponse:
         """
-        Generate ONE storyboard scene.
+        Generate ONE storyboard scene using compact context payloads.
         """
         scene_num = script_scene.get(
             "scene_number", script_scene.get("scene", "Unknown")
@@ -78,13 +80,21 @@ class StoryboardAgent:
                     production_brief=production_brief,
                     outline_scene=outline_scene,
                     script_scene=script_scene,
+                    completed_scenes=[last_storyboard_scene] if last_storyboard_scene else [],
                 )
             else:
                 prompt = json.dumps(
                     {
-                        "production_brief": production_brief,
+                        "production_brief": {
+                            "title": production_brief.get("title"),
+                            "topic": production_brief.get("topic"),
+                            "tone": production_brief.get("tone"),
+                            "story_arc": production_brief.get("story_arc"),
+                        },
+                        "outline_summary": outline_summary,
                         "outline_scene": outline_scene,
                         "script_scene": script_scene,
+                        "previous_storyboard_scene": last_storyboard_scene,
                     },
                     indent=4,
                     ensure_ascii=False,
@@ -123,7 +133,7 @@ class StoryboardAgent:
         state: ProjectState,
     ) -> ProjectState:
         """
-        Executes the storyboard generation pipeline step.
+        Executes the storyboard generation pipeline step using memory integration.
         """
         self._validate_state(state)
 
@@ -132,11 +142,20 @@ class StoryboardAgent:
         storyboard = StoryboardData()
         production_brief = state.production_brief.model_dump()
 
+        # Retrieve outline overview from memory if available
+        outline_summary = (
+            state.memory.get_compact_outline_summary()
+            if state.memory
+            else [{"scene_number": s.scene_number, "title": s.title, "goal": s.goal} for s in state.outline.scenes]
+        )
+
         # Build lookup table from outline.scenes
         outline_lookup = {}
         if hasattr(state.outline, "scenes") and state.outline.scenes:
             for scene in state.outline.scenes:
                 outline_lookup[scene.scene_number] = scene.model_dump()
+
+        last_storyboard_scene: dict | None = None
 
         # Generate storyboard scene-by-scene
         for script_scene in state.script.scenes:
@@ -147,9 +166,12 @@ class StoryboardAgent:
                 production_brief,
                 outline_scene,
                 script_scene.model_dump(),
+                last_storyboard_scene,
+                outline_summary,
             )
 
             storyboard.scenes.append(response.scene)
+            last_storyboard_scene = response.scene.model_dump()
 
         state.storyboard = storyboard
         state.current_stage = "storyboard"
