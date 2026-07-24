@@ -1,5 +1,5 @@
 # Navigate to project directory
-Set-Location -Path "C:\AIStudio"
+Set-Location -Path "C:\AIStudio_Alt_Architecture"
 
 # Activate the virtual environment
 .\.venv\Scripts\Activate.ps1

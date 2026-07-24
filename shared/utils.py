@@ -1,164 +1,96 @@
 """
 AIStudio Shared Utilities
 
-Common helper functions used throughout AIStudio.
+Generic helper functions used throughout AIStudio.
 
-This module contains only generic reusable utilities.
-It must never contain agent-specific logic.
+This module contains only reusable utilities and must never contain
+business logic, AI logic or project orchestration.
 
 Author : AIStudio
 """
 
 from __future__ import annotations
 
-import json
 import re
 import uuid
-
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-
-from shared.models import ProjectState
 
 
 # ==========================================================
 # Time Utilities
 # ==========================================================
 
+
+def utc_now() -> datetime:
+    """
+    Return the current UTC datetime.
+    """
+
+    return datetime.now(UTC)
+
+
 def timestamp() -> str:
     """
-    Returns the current timestamp.
+    Return a filesystem-safe timestamp.
 
     Example
-
-    20260717_181530
+    -------
+    20260723_153015
     """
 
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
+    return utc_now().strftime("%Y%m%d_%H%M%S")
 
 
 # ==========================================================
-# Project Utilities
+# Identifier Utilities
 # ==========================================================
+
+
+def generate_id() -> str:
+    """
+    Generate a UUID4 string.
+    """
+
+    return str(uuid.uuid4())
+
 
 def generate_project_id() -> str:
     """
-    Generates a unique project identifier.
+    Generate a unique project identifier.
     """
 
-    short_id = str(uuid.uuid4())[:8]
-
-    return f"{timestamp()}_{short_id}"
-
-
-def create_project_directory(
-    root: Path,
-    project_id: str,
-) -> Path:
-    """
-    Creates the directory structure for a project.
-    """
-
-    project_path = root / project_id
-
-    directories = [
-
-        "audio",
-
-        "images",
-
-        "video",
-
-        "subtitles",
-
-        "thumbnail",
-
-        "cache",
-
-        "logs",
-
-        "exports",
-
-    ]
-
-    project_path.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    for directory in directories:
-
-        (
-            project_path /
-            directory
-        ).mkdir(
-            exist_ok=True,
-        )
-
-    return project_path
-
-
-# ==========================================================
-# JSON Utilities
-# ==========================================================
-
-def save_project_state(
-    project: ProjectState,
-    filename: Path,
-) -> None:
-    """
-    Saves a ProjectState to JSON.
-    """
-
-    with filename.open(
-        "w",
-        encoding="utf-8",
-    ) as file:
-
-        json.dump(
-
-            project.model_dump(
-                mode="json",
-            ),
-
-            file,
-
-            indent=4,
-
-            ensure_ascii=False,
-
-        )
-
-
-def load_project_state(
-    filename: Path,
-) -> ProjectState:
-    """
-    Loads a ProjectState from JSON.
-    """
-
-    with filename.open(
-        "r",
-        encoding="utf-8",
-    ) as file:
-
-        data = json.load(file)
-
-    return ProjectState(**data)
+    return f"{timestamp()}_{uuid.uuid4().hex[:8]}"
 
 
 # ==========================================================
 # File Utilities
 # ==========================================================
 
+
+def ensure_directory(
+    directory: Path,
+) -> Path:
+    """
+    Ensure a directory exists.
+    """
+
+    directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    return directory
+
+
 def safe_filename(
     text: str,
 ) -> str:
     """
-    Converts text into a filesystem-safe filename.
+    Convert arbitrary text into a filesystem-safe filename.
     """
 
-    text = text.lower()
+    text = text.lower().strip()
 
     text = re.sub(
         r"[^a-z0-9]+",
@@ -166,4 +98,54 @@ def safe_filename(
         text,
     )
 
+    text = re.sub(
+        r"_+",
+        "_",
+        text,
+    )
+
     return text.strip("_")
+
+
+def unique_filename(
+    name: str,
+    extension: str,
+) -> str:
+    """
+    Generate a unique filename.
+
+    Example
+    -------
+    lion_documentary_4d71bcb4.png
+    """
+
+    extension = extension.lstrip(".")
+
+    return (
+        f"{safe_filename(name)}_"
+        f"{uuid.uuid4().hex[:8]}.{extension}"
+    )
+
+
+# ==========================================================
+# Path Utilities
+# ==========================================================
+
+
+def relative_path(
+    path: Path,
+    root: Path,
+) -> str:
+    """
+    Return a relative path if possible.
+    """
+
+    try:
+
+        return str(
+            path.relative_to(root)
+        )
+
+    except ValueError:
+
+        return str(path)

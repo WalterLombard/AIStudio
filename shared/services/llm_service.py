@@ -23,6 +23,12 @@ from shared.logger import get_logger
 
 LOGGER = get_logger("LLMService")
 
+REQUEST_TIMEOUT = 300
+
+SUPPORTED_PROVIDERS = {
+    "ollama",
+}
+
 
 class LLMService:
     """
@@ -42,45 +48,35 @@ class LLMService:
 
         self.num_predict = config.models.llm.num_predict
 
-    def generate(
+    def _build_payload(
         self,
         system: str,
         prompt: str,
-        temperature: float | None = None,
-    ) -> str:
+        temperature: float,
+    ) -> dict[str, Any]:
         """
-        Generate plain text from the configured LLM.
+        Build the provider request payload.
         """
 
-        if self.provider != "ollama":
-
-            raise LLMResponseError(
-                f"Unsupported LLM provider '{self.provider}'."
-            )
-
-        if temperature is None:
-
-            temperature = self.temperature
-
-        payload = {
-
+        return {
             "model": self.model,
-
             "system": system,
-
             "prompt": prompt,
-
             "stream": False,
-
             "options": {
-
                 "temperature": temperature,
-
                 "num_predict": self.num_predict,
-
             },
-
         }
+
+    def _log_request(
+        self,
+        temperature: float,
+        prompt: str,
+    ) -> None:
+        """
+        Log the outbound request.
+        """
 
         LOGGER.info("=" * 70)
         LOGGER.info("LLM REQUEST")
@@ -91,36 +87,59 @@ class LLMService:
         LOGGER.info("Temperature   : %.2f", temperature)
         LOGGER.info("Prompt Length : %d characters", len(prompt))
 
+    def _send_request(
+        self,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Send the request to the configured LLM.
+        """
+
         try:
 
             response = requests.post(
-
                 self.endpoint,
-
                 json=payload,
-
-                timeout=300,
-
+                timeout=REQUEST_TIMEOUT,
             )
 
             response.raise_for_status()
 
-            data = response.json()
+            return response.json()
 
         except requests.RequestException as ex:
 
-            LOGGER.exception("Unable to communicate with the LLM.")
+            LOGGER.exception(
+                "Unable to communicate with the LLM."
+            )
 
             raise LLMResponseError(
                 f"Unable to communicate with the LLM: {ex}"
             ) from ex
 
+    def _log_response(
+        self,
+        data: dict[str, Any],
+    ) -> None:
+        """
+        Log the inbound response.
+        """
+
         LOGGER.info("=" * 70)
         LOGGER.info("LLM RESPONSE")
         LOGGER.info("=" * 70)
-        LOGGER.info("Model         : %s", data.get("model", "Unknown"))
-        LOGGER.info("Done          : %s", data.get("done"))
-        LOGGER.info("Done Reason   : %s", data.get("done_reason"))
+        LOGGER.info(
+            "Model         : %s",
+            data.get("model", "Unknown"),
+        )
+        LOGGER.info(
+            "Done          : %s",
+            data.get("done"),
+        )
+        LOGGER.info(
+            "Done Reason   : %s",
+            data.get("done_reason"),
+        )
         LOGGER.info(
             "Prompt Tokens : %s",
             data.get("prompt_eval_count", 0),
@@ -130,15 +149,88 @@ class LLMService:
             data.get("eval_count", 0),
         )
 
+    @staticmethod
+    def _validate_response(
+        data: dict[str, Any],
+    ) -> None:
+        """
+        Validate the provider response.
+        """
+
         if "response" not in data:
 
             raise LLMResponseError(
                 "LLM returned an invalid response."
             )
 
-        text = data["response"].strip()
+    @staticmethod
+    def _clean_json_response(
+        text: str,
+    ) -> str:
+        """
+        Remove Markdown fences from JSON responses.
+        """
 
-        return text
+        if not text.startswith("```"):
+
+            return text
+
+        lines = text.splitlines()
+
+        if lines:
+
+            lines = lines[1:]
+
+        if lines and lines[-1].strip() == "```":
+
+            lines = lines[:-1]
+
+        return "\n".join(lines).strip()
+
+    def generate(
+        self,
+        system: str,
+        prompt: str,
+        temperature: float | None = None,
+    ) -> str:
+        """
+        Generate plain text from the configured LLM.
+        """
+
+        if self.provider not in SUPPORTED_PROVIDERS:
+
+            raise LLMResponseError(
+                f"Unsupported LLM provider '{self.provider}'."
+            )
+
+        if temperature is None:
+
+            temperature = self.temperature
+
+        payload = self._build_payload(
+            system=system,
+            prompt=prompt,
+            temperature=temperature,
+        )
+
+        self._log_request(
+            temperature=temperature,
+            prompt=prompt,
+        )
+
+        data = self._send_request(
+            payload,
+        )
+
+        self._log_response(
+            data,
+        )
+
+        self._validate_response(
+            data,
+        )
+
+        return data["response"].strip()
 
     def generate_json(
         self,
@@ -151,32 +243,14 @@ class LLMService:
         """
 
         text = self.generate(
-
             system=system,
-
             prompt=prompt,
-
             temperature=temperature,
-
         )
 
-        #
-        # Remove markdown fences if the model returned them.
-        #
-
-        if text.startswith("```"):
-
-            lines = text.splitlines()
-
-            if lines:
-
-                lines = lines[1:]
-
-            if lines and lines[-1].strip() == "```":
-
-                lines = lines[:-1]
-
-            text = "\n".join(lines).strip()
+        text = self._clean_json_response(
+            text,
+        )
 
         LOGGER.info("=" * 70)
         LOGGER.info("JSON TO PARSE")
@@ -190,7 +264,9 @@ class LLMService:
 
         except json.JSONDecodeError as ex:
 
-            LOGGER.exception("LLM returned invalid JSON.")
+            LOGGER.exception(
+                "LLM returned invalid JSON."
+            )
 
             raise LLMResponseError(
                 "LLM did not return valid JSON."

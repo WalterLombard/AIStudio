@@ -28,23 +28,35 @@ class PromptService:
     Loads prompt files for AI agents.
     """
 
+    PROMPT_FILENAME = "prompt.md"
+
     @staticmethod
-    def load_prompt(agent_file: str) -> str:
+    def load_prompt(
+        agent_file: str,
+    ) -> str:
         """
-        Load the prompt.md located beside an agent.py file.
+        Load the prompt file associated with an agent.
 
         Parameters
         ----------
         agent_file
-            Usually __file__ from the calling agent.
+            The __file__ value from the calling agent.
 
         Returns
         -------
         str
-            Prompt contents.
+            The prompt contents.
+
+        Raises
+        ------
+        AIStudioError
+            If the prompt file cannot be found.
         """
 
-        prompt_file = Path(agent_file).parent / "prompt.md"
+        prompt_file = (
+            Path(agent_file).parent
+            / PromptService.PROMPT_FILENAME
+        )
 
         LOGGER.info(
             "Loading prompt: %s",
@@ -57,6 +69,12 @@ class PromptService:
                 f"Prompt file does not exist:\n{prompt_file}"
             )
 
-        return prompt_file.read_text(
-            encoding="utf-8"
+        prompt = prompt_file.read_text(
+            encoding="utf-8",
         )
+
+        LOGGER.info(
+            "Prompt loaded successfully."
+        )
+
+        return prompt

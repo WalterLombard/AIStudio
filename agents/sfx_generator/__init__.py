@@ -1,7 +1,7 @@
 """
 AIStudio Sound Effects Generator
 
-Exports the Sound Effects Generator Agent.
+Exports the Sound Effects Generator.
 
 Author : AIStudio
 """

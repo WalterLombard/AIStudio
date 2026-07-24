@@ -3,21 +3,25 @@ AIStudio Asset Service
 
 Responsible for managing every generated production asset.
 
-This service acts as the central registry for images, audio,
-motion, video and future assets.
+This service provides the central registry for all production assets
+generated throughout the AIStudio pipeline.
 
 Author : AIStudio
 """
 
 from __future__ import annotations
 
-import json
+from datetime import UTC, datetime
 from pathlib import Path
 
-from shared.models.asset import (
+from shared.logger import get_logger
+from shared.models import (
     AssetRecord,
     AssetRegistry,
 )
+
+
+LOGGER = get_logger("AssetService")
 
 
 class AssetService:
@@ -25,15 +29,22 @@ class AssetService:
     Central asset registry.
     """
 
+    REGISTRY_DIRECTORY = "registry"
+
+    REGISTRY_FILENAME = "assets.json"
+
     def __init__(
         self,
         project_directory: str = ".",
     ) -> None:
+        """
+        Initialise the asset registry.
+        """
 
         self.registry_path = (
             Path(project_directory)
-            / "registry"
-            / "assets.json"
+            / self.REGISTRY_DIRECTORY
+            / self.REGISTRY_FILENAME
         )
 
         self.registry_path.parent.mkdir(
@@ -41,35 +52,68 @@ class AssetService:
             exist_ok=True,
         )
 
+        self.registry = self._load_registry()
+
+    def _load_registry(
+        self,
+    ) -> AssetRegistry:
+        """
+        Load the asset registry from disk.
+        """
+
         if self.registry_path.exists():
 
-            self.registry = AssetRegistry.model_validate_json(
+            LOGGER.info(
+                "Loading asset registry: %s",
+                self.registry_path,
+            )
+
+            return AssetRegistry.model_validate_json(
                 self.registry_path.read_text(
-                    encoding="utf-8"
+                    encoding="utf-8",
                 )
             )
 
-        else:
+        LOGGER.info(
+            "Creating new asset registry."
+        )
 
-            self.registry = AssetRegistry()
+        registry = AssetRegistry()
 
-            self.save()
+        self._save_registry(
+            registry,
+        )
 
-    def save(self) -> None:
+        return registry
+
+    def _save_registry(
+        self,
+        registry: AssetRegistry,
+    ) -> None:
         """
-        Save registry to disk.
+        Save an asset registry to disk.
         """
+
+        registry.modified = datetime.now(
+            UTC,
+        )
 
         self.registry_path.write_text(
-
-            self.registry.model_dump_json(
-
-                indent=4
-
+            registry.model_dump_json(
+                indent=4,
             ),
-
             encoding="utf-8",
+        )
 
+    def save(
+        self,
+    ) -> None:
+        """
+        Persist the current registry.
+        """
+
+        self._save_registry(
+            self.registry,
         )
 
     def register(
@@ -80,11 +124,21 @@ class AssetService:
         Register a newly generated asset.
         """
 
+        asset.modified = datetime.now(
+            UTC,
+        )
+
         self.registry.assets.append(
-            asset
+            asset,
         )
 
         self.save()
+
+        LOGGER.info(
+            "Registered asset %s (%s)",
+            asset.asset_id,
+            asset.asset_type,
+        )
 
         return asset
 
@@ -93,52 +147,36 @@ class AssetService:
         asset_id: str,
     ) -> AssetRecord | None:
         """
-        Retrieve an asset by ID.
+        Retrieve an asset by identifier.
         """
 
-        for asset in self.registry.assets:
-
-            if asset.asset_id == asset_id:
-
-                return asset
-
-        return None
+        return self.registry.get(
+            asset_id,
+        )
 
     def get_assets_by_stage(
         self,
         stage: str,
     ) -> list[AssetRecord]:
         """
-        Return every asset belonging to a stage.
+        Retrieve every asset belonging to a stage.
         """
 
-        return [
-
-            asset
-
-            for asset in self.registry.assets
-
-            if asset.stage == stage
-
-        ]
+        return self.registry.by_stage(
+            stage,
+        )
 
     def get_assets_by_type(
         self,
         asset_type: str,
     ) -> list[AssetRecord]:
         """
-        Return every asset of a given type.
+        Retrieve every asset of a given type.
         """
 
-        return [
-
-            asset
-
-            for asset in self.registry.assets
-
-            if asset.asset_type == asset_type
-
-        ]
+        return self.registry.by_type(
+            asset_type,
+        )
 
     def update(
         self,
@@ -148,8 +186,12 @@ class AssetService:
         Update an existing asset.
         """
 
+        asset.modified = datetime.now(
+            UTC,
+        )
+
         for index, existing in enumerate(
-            self.registry.assets
+            self.registry.assets,
         ):
 
             if existing.asset_id == asset.asset_id:
@@ -158,10 +200,15 @@ class AssetService:
 
                 self.save()
 
+                LOGGER.info(
+                    "Updated asset %s",
+                    asset.asset_id,
+                )
+
                 return
 
         raise ValueError(
-            f"Unknown asset '{asset.asset_id}'"
+            f"Unknown asset '{asset.asset_id}'."
         )
 
     def remove(
@@ -169,7 +216,7 @@ class AssetService:
         asset_id: str,
     ) -> None:
         """
-        Remove an asset.
+        Remove an asset from the registry.
         """
 
         self.registry.assets = [
@@ -183,3 +230,45 @@ class AssetService:
         ]
 
         self.save()
+
+        LOGGER.info(
+            "Removed asset %s",
+            asset_id,
+        )
+
+    def asset_exists(
+        self,
+        asset_id: str,
+    ) -> bool:
+        """
+        Determine whether an asset exists.
+        """
+
+        return self.get_asset(
+            asset_id,
+        ) is not None
+
+    def clear(
+        self,
+    ) -> None:
+        """
+        Remove all registered assets.
+        """
+
+        self.registry.assets.clear()
+
+        self.save()
+
+        LOGGER.info(
+            "Asset registry cleared."
+        )
+
+    @property
+    def total_assets(
+        self,
+    ) -> int:
+        """
+        Return the number of registered assets.
+        """
+
+        return self.registry.total_assets

@@ -1,11 +1,8 @@
 """
 AIStudio Sound Effects Models
 
-Defines the planning models and generated sound effect assets used by the
-Sound Effects Generator.
-
-These models represent the complete lifecycle of documentary sound effects,
-from LLM planning through generated production assets.
+Defines the planning models and generated sound effect assets used by
+the Sound Effects Generator.
 
 Produced by the SFX Generator.
 
@@ -19,13 +16,10 @@ from pydantic import BaseModel, Field
 
 class SFXCue(BaseModel):
     """
-    Defines the planned sound effect for a single storyboard shot.
-
-    This model is produced by the LLM and represents the environmental
-    ambience required for one approved shot.
+    Planned sound effect for one documentary scene.
     """
 
-    scene_id: str = ""
+    scene: int = 0
 
     shot_number: int = 0
 
@@ -34,6 +28,8 @@ class SFXCue(BaseModel):
     start_time: float = 0.0
 
     end_time: float = 0.0
+
+    duration: float = 0.0
 
     effect: str = ""
 
@@ -47,16 +43,18 @@ class SFXCue(BaseModel):
 class SFXData(BaseModel):
     """
     Complete documentary sound effects plan.
-
-    Contains one sound effect cue for every approved shot.
     """
 
-    cues: list[SFXCue] = Field(default_factory=list)
+    cues: list[SFXCue] = Field(
+        default_factory=list,
+    )
+
+    total_duration: float = 0.0
 
 
 class SFXSceneResponse(BaseModel):
     """
-    Expected JSON response from the LLM for a single storyboard shot.
+    Returned by the LLM for one sound effect cue.
     """
 
     cue: SFXCue
@@ -64,15 +62,12 @@ class SFXSceneResponse(BaseModel):
 
 class SFXAsset(BaseModel):
     """
-    Represents one generated sound effect asset.
-
-    This model references the generated production asset after it has been
-    created by the SFXService and registered with the AssetService.
+    One generated sound effect asset.
     """
 
     asset_id: str = ""
 
-    scene_id: str = ""
+    scene: int = 0
 
     shot_number: int = 0
 
@@ -84,15 +79,24 @@ class SFXAsset(BaseModel):
 
     duration: float = 0.0
 
-    metadata: dict[str, object] = Field(default_factory=dict)
+    sample_rate: int = 44100
+
+    channels: int = 2
+
+    status: str = "completed"
+
+    metadata: dict[str, object] = Field(
+        default_factory=dict,
+    )
 
 
 class SFXLibrary(BaseModel):
     """
-    Collection of all generated documentary sound effects.
-
-    This object is stored within ProjectState after the Sound Effects
-    Generator completes successfully.
+    Generated sound effect library.
     """
 
-    assets: list[SFXAsset] = Field(default_factory=list)
+    assets: list[SFXAsset] = Field(
+        default_factory=list,
+    )
+
+    total_duration: float = 0.0

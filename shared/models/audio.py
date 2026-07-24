@@ -1,9 +1,7 @@
 """
 AIStudio Audio Models
 
-Defines generated narration audio.
-
-Produced by the Voice Generator.
+Defines the generated narration audio produced by the Voice Generator.
 
 Author : AIStudio
 """
@@ -15,23 +13,35 @@ from pydantic import BaseModel, Field
 
 class AudioAsset(BaseModel):
     """
-    One generated narration file.
+    One generated narration audio file.
     """
+
+    scene: int = 0
 
     asset_id: str = ""
 
-    scene_id: str = ""
+    provider: str = ""
+
+    voice: str = ""
 
     filename: str = ""
 
     duration: float = 0.0
 
+    sample_rate: int = 24000
+
+    channels: int = 1
+
+    status: str = "completed"
+
 
 class AudioData(BaseModel):
     """
-    Generated narration audio.
+    Complete narration audio library.
     """
 
     assets: list[AudioAsset] = Field(
-        default_factory=list
+        default_factory=list,
     )
+
+    total_duration: float = 0.0

@@ -3,38 +3,52 @@ AIStudio Pipeline Runner
 
 Coordinates the complete AIStudio production pipeline.
 
-The Pipeline Runner contains NO AI logic.
-
-Its responsibility is simply to execute each agent in the correct
-sequence while passing the ProjectState between them.
+The Pipeline Runner contains no AI logic. Its responsibility is to
+execute each production agent in sequence, maintain the shared
+ProjectState, log execution progress and provide a single entry point
+into AIStudio.
 
 Author : AIStudio
 """
 
 from __future__ import annotations
 
-import logging
+from time import perf_counter
+from typing import Protocol
 
-from shared.models import ProjectState
-
+from agents.audio_mixer import AudioMixerAgent
 from agents.executive_producer import ExecutiveProducer
-from agents.researcher import ResearchAgent
-from agents.outline import OutlineAgent
-from agents.script_writer import ScriptWriterAgent
-from agents.storyboard import StoryboardAgent
-from agents.visual_planner import VisualPlannerAgent
-from agents.shot_planner import ShotPlannerAgent
 from agents.image_generator import ImageGeneratorAgent
 from agents.motion_designer import MotionDesignerAgent
-from agents.narration_designer import NarrationDesignerAgent
-from agents.voice_generator import VoiceGeneratorAgent
 from agents.music_generator import MusicGeneratorAgent
+from agents.narration_designer import NarrationDesignerAgent
+from agents.outline import OutlineAgent
+from agents.researcher import ResearchAgent
+from agents.script_writer import ScriptWriterAgent
 from agents.sfx_generator import SFXGeneratorAgent
-from agents.audio_mixer import AudioMixerAgent
+from agents.shot_planner import ShotPlannerAgent
+from agents.storyboard import StoryboardAgent
 from agents.video_compiler import VideoCompilerAgent
+from agents.visual_planner import VisualPlannerAgent
+from agents.voice_generator import VoiceGeneratorAgent
+
+from shared.logger import get_logger
+from shared.models import ProjectState
 
 
-LOGGER = logging.getLogger("PipelineRunner")
+class PipelineAgent(Protocol):
+    """
+    Standard interface implemented by every AIStudio production agent.
+    """
+
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+        ...
+
+
+LOGGER = get_logger("PipelineRunner")
 
 
 class PipelineRunner:
@@ -43,6 +57,9 @@ class PipelineRunner:
     """
 
     def __init__(self) -> None:
+        """
+        Initialise every production agent.
+        """
 
         self.executive_producer = ExecutiveProducer()
 
@@ -56,9 +73,6 @@ class PipelineRunner:
 
         self.visual_planner = VisualPlannerAgent()
 
-        #
-        # NEW
-        #
         self.shot_planner = ShotPlannerAgent()
 
         self.image_generator = ImageGeneratorAgent()
@@ -77,83 +91,156 @@ class PipelineRunner:
 
         self.video_compiler = VideoCompilerAgent()
 
+    def _run_stage(
+        self,
+        stage_name: str,
+        agent: PipelineAgent,
+        state: ProjectState,
+    ) -> ProjectState:
+        """
+        Execute a single production stage.
+        """
+
+        LOGGER.info("=" * 70)
+
+        LOGGER.info(
+            "Starting Stage : %s",
+            stage_name,
+        )
+
+        start = perf_counter()
+
+        state = agent.run(
+            state,
+        )
+
+        elapsed = perf_counter() - start
+
+        LOGGER.info(
+            "Completed Stage : %s (%.2f seconds)",
+            stage_name,
+            elapsed,
+        )
+
+        return state
+
     def run(
         self,
         user_request: str,
     ) -> ProjectState:
         """
-        Execute the complete production pipeline.
+        Execute the complete AIStudio production pipeline.
         """
 
+        LOGGER.info("=" * 70)
+
         LOGGER.info(
-            "Starting AIStudio Production Pipeline"
+            "AIStudio Production Pipeline Started",
         )
+
+        pipeline_start = perf_counter()
 
         state = self.executive_producer.run(
-            user_request
+            user_request,
         )
 
-        state = self.research.run(
-            state
+        state = self._run_stage(
+            "Research",
+            self.research,
+            state,
         )
 
-        state = self.outline.run(
-            state
+        state = self._run_stage(
+            "Outline",
+            self.outline,
+            state,
         )
 
-        state = self.script.run(
-            state
+        state = self._run_stage(
+            "Script Writer",
+            self.script,
+            state,
         )
 
-        state = self.storyboard.run(
-            state
+        state = self._run_stage(
+            "Storyboard",
+            self.storyboard,
+            state,
         )
 
-        state = self.visual_planner.run(
-            state
+        state = self._run_stage(
+            "Visual Planner",
+            self.visual_planner,
+            state,
         )
 
-        #
-        # NEW STAGE
-        #
-        state = self.shot_planner.run(
-            state
+        state = self._run_stage(
+            "Shot Planner",
+            self.shot_planner,
+            state,
         )
 
-        state = self.image_generator.run(
-            state
+        state = self._run_stage(
+            "Image Generator",
+            self.image_generator,
+            state,
         )
 
-        state = self.motion_designer.run(
-            state
+        state = self._run_stage(
+            "Motion Designer",
+            self.motion_designer,
+            state,
         )
 
-        state = self.narration_designer.run(
-            state
+        state = self._run_stage(
+            "Narration Designer",
+            self.narration_designer,
+            state,
         )
 
-        state = self.voice_generator.run(
-            state
+        state = self._run_stage(
+            "Voice Generator",
+            self.voice_generator,
+            state,
         )
 
-        state = self.music_generator.run(
-            state
+        state = self._run_stage(
+            "Music Generator",
+            self.music_generator,
+            state,
         )
 
-        state = self.sfx_generator.run(
-            state
+        state = self._run_stage(
+            "SFX Generator",
+            self.sfx_generator,
+            state,
         )
 
-        state = self.audio_mixer.run(
-            state
+        state = self._run_stage(
+            "Audio Mixer",
+            self.audio_mixer,
+            state,
         )
 
-        state = self.video_compiler.run(
-            state
+        state = self._run_stage(
+            "Video Compiler",
+            self.video_compiler,
+            state,
+        )
+
+        total = perf_counter() - pipeline_start
+
+        LOGGER.info("=" * 70)
+
+        LOGGER.info(
+            "AIStudio Production Pipeline Complete",
         )
 
         LOGGER.info(
-            "AIStudio Production Pipeline Complete"
+            "Total Runtime : %.2f seconds",
+            total,
         )
+
+        LOGGER.info("=" * 70)
 
         return state

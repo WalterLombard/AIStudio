@@ -14,13 +14,21 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from shared.config import config
+
 
 class Logger:
     """
     Central logging service for AIStudio.
     """
 
-    LOG_DIRECTORY = Path("logs")
+    LOG_DIRECTORY = Path(config.paths.logs)
+
+    LOG_FORMAT = (
+        "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    )
+
+    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     @classmethod
     def get_logger(
@@ -41,11 +49,16 @@ class Logger:
         if logger.handlers:
             return logger
 
-        logger.setLevel(logging.INFO)
+        logger.setLevel(
+            getattr(
+                logging,
+                config.logging.level,
+            )
+        )
 
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
+            fmt=cls.LOG_FORMAT,
+            datefmt=cls.DATE_FORMAT,
         )
 
         log_file = cls.LOG_DIRECTORY / f"{name}.log"
@@ -55,15 +68,23 @@ class Logger:
             encoding="utf-8",
         )
 
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(
+            formatter,
+        )
 
         console_handler = logging.StreamHandler()
 
-        console_handler.setFormatter(formatter)
+        console_handler.setFormatter(
+            formatter,
+        )
 
-        logger.addHandler(file_handler)
+        logger.addHandler(
+            file_handler,
+        )
 
-        logger.addHandler(console_handler)
+        logger.addHandler(
+            console_handler,
+        )
 
         logger.propagate = False
 
@@ -81,4 +102,6 @@ def get_logger(
     logger = get_logger("ExecutiveProducer")
     """
 
-    return Logger.get_logger(name)
+    return Logger.get_logger(
+        name,
+    )

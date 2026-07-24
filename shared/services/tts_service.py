@@ -1,9 +1,11 @@
 """
 AIStudio Text To Speech Service
 
-Abstract interface used by the Voice Generator.
+Generates narration audio from approved narration segments.
 
-Initially this is a placeholder implementation.
+This service defines the public interface for Text-to-Speech providers.
+Concrete implementations may use Kokoro, Piper, XTTS, ElevenLabs or
+other engines without affecting the rest of AIStudio.
 
 Author : AIStudio
 """
@@ -15,8 +17,16 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
+from shared.logger import get_logger
+
+
+LOGGER = get_logger("TTSService")
+
 
 class TTSResult(BaseModel):
+    """
+    Represents a generated narration audio asset.
+    """
 
     filename: str
 
@@ -24,68 +34,102 @@ class TTSResult(BaseModel):
 
     provider: str
 
-    metadata: dict
+    metadata: dict[str, object]
 
 
 class TTSService:
+    """
+    High-level Text-to-Speech generation service.
+    """
+
+    OUTPUT_DIRECTORY = Path("output/audio")
 
     def __init__(self) -> None:
+        """
+        Initialise the Text-to-Speech service.
+        """
 
-        self.output = Path("output/audio")
-
-        self.output.mkdir(
+        self.OUTPUT_DIRECTORY.mkdir(
             parents=True,
             exist_ok=True,
         )
 
-    def generate(
+        LOGGER.info(
+            "TTSService initialized."
+        )
 
+    def _create_output_file(
         self,
+    ) -> Path:
+        """
+        Create the output filename for generated narration.
+        """
 
+        output_file = self.OUTPUT_DIRECTORY / f"{uuid4()}.wav"
+
+        output_file.touch()
+
+        return output_file
+
+    def generate(
+        self,
         text: str,
-
         emotion: str,
-
         speaking_rate: float,
-
         pause_before: float,
-
         pause_after: float,
-
     ) -> TTSResult:
+        """
+        Generate narration audio.
 
-        filename = f"{uuid4()}.wav"
+        Parameters
+        ----------
+        text
+            Narration text.
 
-        file = self.output / filename
+        emotion
+            Desired vocal emotion.
 
-        file.touch()
+        speaking_rate
+            Speech rate multiplier.
+
+        pause_before
+            Silence before narration.
+
+        pause_after
+            Silence after narration.
+
+        Returns
+        -------
+        TTSResult
+            Generated narration asset.
+
+        Notes
+        -----
+        This is currently a placeholder implementation. A production
+        Text-to-Speech provider will be implemented in a later release.
+        """
+
+        LOGGER.info(
+            "Generating narration audio."
+        )
+
+        output_file = self._create_output_file()
 
         estimated_duration = max(
-
             len(text.split()) / 2.6,
-
             1.0,
-
         )
 
         return TTSResult(
-
-            filename=str(file),
-
+            filename=str(output_file),
             duration=estimated_duration,
-
             provider="placeholder",
-
             metadata={
-
+                "status": "placeholder",
                 "emotion": emotion,
-
                 "speaking_rate": speaking_rate,
-
                 "pause_before": pause_before,
-
                 "pause_after": pause_after,
-
             },
-
         )

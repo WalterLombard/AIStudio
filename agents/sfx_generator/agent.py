@@ -1,14 +1,13 @@
 """
 AIStudio Sound Effects Generator
 
-Generates documentary sound effects one shot at a time.
+Generates documentary sound effects for every approved storyboard shot.
 
-Each approved shot receives its own sound effects plan. This keeps
-prompts small, avoids LLM timeouts and allows regeneration of
-individual shots.
+The Sound Effects Generator translates the approved motion and narration
+plans into environmental sound effect cues. Each cue is subsequently
+executed by the SFXService to generate production-ready sound assets.
 
-After planning completes, the SFXService generates the
-actual sound effect assets.
+Produced by the Sound Design department.
 
 Author : AIStudio
 """
@@ -21,6 +20,7 @@ from shared.models import (
     AssetRecord,
     ProjectState,
     SFXAsset,
+    SFXCue,
     SFXData,
     SFXLibrary,
     SFXSceneResponse,
@@ -36,10 +36,13 @@ from shared.services import (
 
 class SFXGeneratorAgent:
     """
-    Generates documentary sound effects one shot at a time.
+    Generates documentary sound effects for every approved storyboard shot.
     """
 
     def __init__(self) -> None:
+        """
+        Initialise required services.
+        """
 
         self.llm = LLMService()
 
@@ -51,61 +54,143 @@ class SFXGeneratorAgent:
             __file__,
         )
 
-    def _generate_cue(
-        self,
-        motion: dict,
-        narration: dict,
-    ) -> SFXSceneResponse:
-        """
-        Generate sound effects for one shot.
-        """
-
-        prompt = json.dumps(
-
-            {
-                "motion": motion,
-                "narration": narration,
-            },
-
-            indent=4,
-            ensure_ascii=False,
-
-        )
-
-        result = self.llm.generate_json(
-
-            system=self.system_prompt,
-
-            prompt=prompt,
-
-            temperature=0.20,
-
-        )
-
-        return SFXSceneResponse(**result)
-
-    def run(
+    def _validate_state(
         self,
         state: ProjectState,
-    ) -> ProjectState:
+    ) -> None:
+        """
+        Validate required upstream state.
+        """
 
         if state.motion is None:
-
             raise ValueError(
                 "MotionData must exist before SFXGeneratorAgent runs."
             )
 
         if state.narration is None:
-
             raise ValueError(
                 "NarrationData must exist before SFXGeneratorAgent runs."
             )
 
-        plan = SFXData()
+    def _build_payload(
+        self,
+        motion: dict,
+        narration: dict,
+    ) -> str:
+        """
+        Build the LLM payload.
+        """
 
-        #
-        # Generate one cue per shot
-        #
+        payload = {
+            "motion": motion,
+            "narration": narration,
+        }
+
+        return json.dumps(
+            payload,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+    def _generate_cue(
+        self,
+        motion: dict,
+        narration: dict,
+    ) -> SFXCue:
+        """
+        Generate one sound effect cue.
+        """
+
+        prompt = self._build_payload(
+            motion,
+            narration,
+        )
+
+        result = self.llm.generate_json(
+            system=self.system_prompt,
+            prompt=prompt,
+            temperature=0.20,
+        )
+
+        response = SFXSceneResponse(
+            **result,
+        )
+
+        return response.cue
+
+    def _generate_assets(
+        self,
+        plan: SFXData,
+    ) -> SFXLibrary:
+        """
+        Generate all sound effect assets.
+        """
+
+        library = SFXLibrary()
+
+        for cue in plan.cues:
+
+            generated = self.sfx.generate(
+                cue,
+            )
+
+            asset_record = AssetRecord(
+                asset_type="sfx",
+                stage="sfx_generation",
+                provider=generated.provider,
+                filename=generated.filename,
+                source_scene=cue.scene_id,
+                duration=generated.duration,
+                metadata={
+                    **generated.metadata,
+                    "shot_number": cue.shot_number,
+                    "image_asset_id": cue.image_asset_id,
+                },
+            )
+
+            registered = self.assets.register(
+                asset_record,
+            )
+
+            library.assets.append(
+
+                SFXAsset(
+
+                    asset_id=registered.asset_id,
+
+                    scene_id=cue.scene_id,
+
+                    shot_number=cue.shot_number,
+
+                    image_asset_id=cue.image_asset_id,
+
+                    provider=generated.provider,
+
+                    filename=registered.filename,
+
+                    duration=registered.duration,
+
+                    metadata=generated.metadata,
+
+                )
+
+            )
+
+        return library
+
+    def run(
+        self,
+        state: ProjectState,
+    ) -> ProjectState:
+        """
+        Execute the Sound Effects Generator.
+        """
+
+        self._validate_state(
+            state,
+        )
+
+        plan = SFXData()
 
         for motion, narration in zip(
 
@@ -117,7 +202,7 @@ class SFXGeneratorAgent:
 
         ):
 
-            response = self._generate_cue(
+            cue = self._generate_cue(
 
                 motion=motion.model_dump(),
 
@@ -126,68 +211,12 @@ class SFXGeneratorAgent:
             )
 
             plan.cues.append(
-                response.cue
+                cue,
             )
 
-        #
-        # Generate SFX assets
-        #
-
-        library = SFXLibrary()
-
-        for cue in plan.cues:
-
-            generated = self.sfx.generate(
-                cue
-            )
-
-            asset = AssetRecord(
-
-                asset_type="sfx",
-
-                stage="sfx_generation",
-
-                provider=generated.provider,
-
-                filename=generated.filename,
-
-                source_scene=cue.scene_id,
-
-                duration=generated.duration,
-
-                metadata={
-                    **generated.metadata,
-                    "shot_number": cue.shot_number,
-                    "image_asset_id": cue.image_asset_id,
-                },
-
-            )
-
-            asset = self.assets.register(
-                asset
-            )
-
-            library.assets.append(
-
-                SFXAsset(
-
-                    asset_id=asset.asset_id,
-
-                    scene_id=cue.scene_id,
-
-                    shot_number=cue.shot_number,
-
-                    image_asset_id=cue.image_asset_id,
-
-                    filename=asset.filename,
-
-                    duration=asset.duration,
-
-                )
-
-            )
-
-        state.sfx = library
+        state.sfx = self._generate_assets(
+            plan,
+        )
 
         state.current_stage = "sfx_generation"
 

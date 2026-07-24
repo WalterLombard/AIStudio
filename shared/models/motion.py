@@ -1,7 +1,8 @@
 """
 AIStudio Motion Models
 
-Defines the cinematic camera movement for every generated image.
+Defines the cinematic camera movement plan produced by the Motion
+Designer.
 
 Author : AIStudio
 """
@@ -13,10 +14,12 @@ from pydantic import BaseModel, Field
 
 class CameraMove(BaseModel):
     """
-    Camera movement for one generated image.
+    Camera movement for one storyboard shot.
     """
 
-    scene_id: str = ""
+    scene: int = 0
+
+    shot_number: int = 0
 
     image_asset_id: str = ""
 
@@ -52,8 +55,8 @@ class MotionData(BaseModel):
     Complete motion plan.
     """
 
-    scenes: list[CameraMove] = Field(
-        default_factory=list
+    moves: list[CameraMove] = Field(
+        default_factory=list,
     )
 
     total_duration: float = 0.0
@@ -61,7 +64,7 @@ class MotionData(BaseModel):
 
 class MotionSceneResponse(BaseModel):
     """
-    Returned by the LLM when generating ONE camera move.
+    Returned by the LLM for one camera move.
     """
 
-    scene: CameraMove
+    move: CameraMove
